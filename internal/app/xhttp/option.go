@@ -29,6 +29,10 @@ func chromePrinterOptions(r resource.Resource, config conf.Config) (printer.Chro
 		if err != nil {
 			return printer.ChromePrinterOptions{}, err
 		}
+		waitJSRenderStatus, err := resource.WaitJSRenderStatusArg(r, config)
+		if err != nil {
+			return printer.ChromePrinterOptions{}, err
+		}
 		headerHTML, footerHTML,
 			err := resource.HeaderFooterContents(r, config)
 		if err != nil {
@@ -61,21 +65,22 @@ func chromePrinterOptions(r resource.Resource, config conf.Config) (printer.Chro
 			return printer.ChromePrinterOptions{}, err
 		}
 		return printer.ChromePrinterOptions{
-			WaitTimeout:       waitTimeout,
-			WaitDelay:         waitDelay,
-			HeaderHTML:        headerHTML,
-			FooterHTML:        footerHTML,
-			PaperWidth:        paperWidth,
-			PaperHeight:       paperHeight,
-			MarginTop:         marginTop,
-			MarginBottom:      marginBottom,
-			MarginLeft:        marginLeft,
-			MarginRight:       marginRight,
-			Landscape:         landscape,
-			PageRanges:        pageRanges,
-			RpccBufferSize:    googleChromeRpccBufferSize,
-			CustomHTTPHeaders: make(map[string]string),
-			Scale:             scale,
+			WaitTimeout:        waitTimeout,
+			WaitDelay:          waitDelay,
+			WaitJSRenderStatus: waitJSRenderStatus,
+			HeaderHTML:         headerHTML,
+			FooterHTML:         footerHTML,
+			PaperWidth:         paperWidth,
+			PaperHeight:        paperHeight,
+			MarginTop:          marginTop,
+			MarginBottom:       marginBottom,
+			MarginLeft:         marginLeft,
+			MarginRight:        marginRight,
+			Landscape:          landscape,
+			PageRanges:         pageRanges,
+			RpccBufferSize:     googleChromeRpccBufferSize,
+			CustomHTTPHeaders:  make(map[string]string),
+			Scale:              scale,
 		}, nil
 	}
 	opts, err := resolver()

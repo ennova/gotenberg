@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/mafredri/cdp/protocol/runtime"
 	"io/ioutil"
 	"strings"
 	"time"
@@ -31,21 +32,22 @@ type chromePrinter struct {
 // ChromePrinterOptions helps customizing the
 // Google Chrome Printer behaviour.
 type ChromePrinterOptions struct {
-	WaitTimeout       float64
-	WaitDelay         float64
-	HeaderHTML        string
-	FooterHTML        string
-	PaperWidth        float64
-	PaperHeight       float64
-	MarginTop         float64
-	MarginBottom      float64
-	MarginLeft        float64
-	MarginRight       float64
-	Landscape         bool
-	PageRanges        string
-	RpccBufferSize    int64
-	CustomHTTPHeaders map[string]string
-	Scale             float64
+	WaitTimeout        float64
+	WaitDelay          float64
+	WaitJSRenderStatus string
+	HeaderHTML         string
+	FooterHTML         string
+	PaperWidth         float64
+	PaperHeight        float64
+	MarginTop          float64
+	MarginBottom       float64
+	MarginLeft         float64
+	MarginRight        float64
+	Landscape          bool
+	PageRanges         string
+	RpccBufferSize     int64
+	CustomHTTPHeaders  map[string]string
+	Scale              float64
 }
 
 // DefaultChromePrinterOptions returns the default
@@ -53,21 +55,22 @@ type ChromePrinterOptions struct {
 func DefaultChromePrinterOptions(config conf.Config) ChromePrinterOptions {
 	const defaultHeaderFooterHTML string = "<html><head></head><body></body></html>"
 	return ChromePrinterOptions{
-		WaitTimeout:       config.DefaultWaitTimeout(),
-		WaitDelay:         0.0,
-		HeaderHTML:        defaultHeaderFooterHTML,
-		FooterHTML:        defaultHeaderFooterHTML,
-		PaperWidth:        8.27,
-		PaperHeight:       11.7,
-		MarginTop:         1.0,
-		MarginBottom:      1.0,
-		MarginLeft:        1.0,
-		MarginRight:       1.0,
-		Landscape:         false,
-		PageRanges:        "",
-		RpccBufferSize:    config.DefaultGoogleChromeRpccBufferSize(),
-		CustomHTTPHeaders: make(map[string]string),
-		Scale:             1.0,
+		WaitTimeout:        config.DefaultWaitTimeout(),
+		WaitDelay:          0.0,
+		WaitJSRenderStatus: "",
+		HeaderHTML:         defaultHeaderFooterHTML,
+		FooterHTML:         defaultHeaderFooterHTML,
+		PaperWidth:         8.27,
+		PaperHeight:        11.7,
+		MarginTop:          1.0,
+		MarginBottom:       1.0,
+		MarginLeft:         1.0,
+		MarginRight:        1.0,
+		Landscape:          false,
+		PageRanges:         "",
+		RpccBufferSize:     config.DefaultGoogleChromeRpccBufferSize(),
+		CustomHTTPHeaders:  make(map[string]string),
+		Scale:              1.0,
 	}
 }
 
@@ -168,6 +171,14 @@ func (p chromePrinter) Print(destination string) error {
 		} else {
 			p.logger.DebugOp(op, "no wait delay to apply, moving on...")
 		}
+
+		if p.opts.WaitJSRenderStatus != "" {
+			p.logger.DebugOp(op, "wait for receiving JS render done status"+p.opts.WaitJSRenderStatus)
+			if err := Wait(ctx, targetClient, "window.status === '"+p.opts.WaitJSRenderStatus+"'"); err != nil {
+				return err
+			}
+		}
+
 		printToPdfArgs := page.NewPrintToPDFArgs().
 			SetPaperWidth(p.opts.PaperWidth).
 			SetPaperHeight(p.opts.PaperHeight).
@@ -395,3 +406,64 @@ func runBatch(fn ...func() error) error {
 var (
 	_ = Printer(new(chromePrinter))
 )
+
+func Eval(ctx context.Context, c *cdp.Client, expr string, out interface{}) error {
+	args := runtime.NewEvaluateArgs(expr).
+		SetReturnByValue(out != nil)
+	return eval(ctx, c, args, out)
+}
+
+func EvalPromise(ctx context.Context, c *cdp.Client, expr string, out interface{}) error {
+	args := runtime.NewEvaluateArgs(expr).
+		SetReturnByValue(out != nil).
+		SetAwaitPromise(true)
+	return eval(ctx, c, args, out)
+}
+
+func eval(ctx context.Context, c *cdp.Client, args *runtime.EvaluateArgs, out interface{}) error {
+	reply, err := c.Runtime.Evaluate(ctx, args)
+	if err != nil {
+		return err
+	}
+	if reply.ExceptionDetails != nil {
+		return reply.ExceptionDetails
+	}
+	if out == nil {
+		return nil
+	}
+	return json.Unmarshal(reply.Result.Value, out)
+}
+
+func Wait(ctx context.Context, c *cdp.Client, expr string) error {
+	return poll(ctx, func() (bool, error) {
+		var ok bool
+		if err := Eval(ctx, c, expr, &ok); err != nil {
+			return false, err
+		}
+		return ok, nil
+	})
+}
+
+func poll(ctx context.Context, fn func() (bool, error)) error {
+	t := time.NewTimer(1 * time.Second)
+	if !t.Stop() {
+		<-t.C
+	}
+
+	for {
+		ok, err := fn()
+		if err != nil {
+			return err
+		}
+		if ok {
+			return nil
+		}
+
+		t.Reset(10 * time.Millisecond)
+		select {
+		case <-t.C:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
