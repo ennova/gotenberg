@@ -1,6 +1,8 @@
 package xhttp
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -312,12 +314,14 @@ func convertAsync(ctx context.Context, p printer.Printer, filename, fpath string
 		if err := p.Print(fpath); err != nil {
 			xerr := xerror.New(op, err)
 			logger.ErrorOp(xerror.Op(xerr), xerr)
+			sendToErrorWebhook(ctx, xerr)
 			return
 		}
 		f, err := os.Open(fpath)
 		if err != nil {
 			xerr := xerror.New(op, err)
 			logger.ErrorOp(xerror.Op(xerr), xerr)
+			sendToErrorWebhook(ctx, xerr)
 			return
 		}
 		defer f.Close() // nolint: errcheck
@@ -369,4 +373,40 @@ func convertAsync(ctx context.Context, p printer.Printer, filename, fpath string
 		)
 	}()
 	return nil
+}
+
+func sendToErrorWebhook(ctx context.Context, xerr error) {
+	const op = "xhttp.sendToErrorWebhook"
+	logger := ctx.XLogger()
+	r := ctx.MustResource()
+	webhookErrorURL, err := r.StringArg(resource.WebhookErrorURLArgKey, "")
+	if err != nil {
+		xerr := xerror.New(op, err)
+		logger.ErrorOp(xerror.Op(xerr), xerr)
+		return
+	}
+	if r.HasArg(resource.WebhookErrorURLArgKey) {
+		values := map[string]string{"status": string(xerror.Code(xerr)), "message": xerror.Message(xerr)}
+		jsonValue, err := json.Marshal(values)
+		if err != nil {
+			xerr := xerror.New(op, err)
+			logger.ErrorOp(xerror.Op(xerr), xerr)
+			return
+		}
+		req, err := http.NewRequest(http.MethodPost, webhookErrorURL, bytes.NewBuffer(jsonValue))
+		if err != nil {
+			xerr := xerror.New(op, err)
+			logger.ErrorOp(xerror.Op(xerr), xerr)
+			return
+		}
+		req.Header.Set(echo.HeaderContentType, "application/json")
+		httpClient := &http.Client{}
+		resp, err := httpClient.Do(req) /* #nosec */
+		if err != nil {
+			xerr := xerror.New(op, err)
+			logger.ErrorOp(xerror.Op(xerr), xerr)
+			return
+		}
+		defer resp.Body.Close()
+	}
 }

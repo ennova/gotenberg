@@ -24,6 +24,9 @@ const (
 	// WebhookURLTimeoutArgKey is the key
 	// of the argument "webhookURLTimeout".
 	WebhookURLTimeoutArgKey ArgKey = "webhookURLTimeout"
+	// WebhookErrorURLArgKey is the key
+	// of the argument "webhookErrorURL".
+	WebhookErrorURLArgKey ArgKey = "webhookErrorURL"
 	// RemoteURLArgKey is the key
 	// of the argument "remoteURL".
 	RemoteURLArgKey ArgKey = "remoteURL"
@@ -73,6 +76,7 @@ func ArgKeys() []ArgKey {
 		WaitTimeoutArgKey,
 		WebhookURLArgKey,
 		WebhookURLTimeoutArgKey,
+		WebhookErrorURLArgKey,
 		RemoteURLArgKey,
 		WaitDelayArgKey,
 		PaperWidthArgKey,
