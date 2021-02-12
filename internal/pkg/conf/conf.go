@@ -43,6 +43,15 @@ const (
 	// GoogleChromeIgnoreCertificateErrorsEnvVar contains the name
 	// of the environment variable "GOOGLE_CHROME_IGNORE_CERTIFICATE_ERRORS".
 	GoogleChromeIgnoreCertificateErrorsEnvVar string = "GOOGLE_CHROME_IGNORE_CERTIFICATE_ERRORS"
+	// EnableAuthEnvVar contains the name
+	// of the environment variable "ENABLE_AUTH".
+	EnableAuthEnvVar string = "ENABLE_AUTH"
+	// AuthUsernameEnvVar contains the name
+	// of the environment variable "AUTH_USERNAME".
+	AuthUsernameEnvVar string = "AUTH_USERNAME"
+	// AuthPasswordEnvVar contains the name
+	// of the environment variable "ENABLE_AUTH".
+	AuthPasswordEnvVar string = "AUTH_PASSWORD"
 )
 
 // Config contains the application
@@ -61,6 +70,9 @@ type Config struct {
 	rootPath                            string
 	maximumGoogleChromeRpccBufferSize   int64
 	defaultGoogleChromeRpccBufferSize   int64
+	enableAuthentication                bool
+	authenticationUsername              string
+	authenticationPassword              string
 }
 
 // DefaultConfig returns the default
@@ -80,6 +92,9 @@ func DefaultConfig() Config {
 		maximumGoogleChromeRpccBufferSize:   104857600, // ~100 MB
 		defaultGoogleChromeRpccBufferSize:   1048576,   // 1 MB
 		googleChromeIgnoreCertificateErrors: false,
+		enableAuthentication:                false,
+		authenticationUsername:              "",
+		authenticationPassword:              "",
 	}
 }
 
@@ -201,6 +216,30 @@ func FromEnv() (Config, error) {
 		if err != nil {
 			return c, err
 		}
+		enableAuthentication, err := xassert.BoolFromEnv(
+			EnableAuthEnvVar,
+			c.enableAuthentication,
+		)
+		c.enableAuthentication = enableAuthentication
+		if err != nil {
+			return c, err
+		}
+		authenticationUsername, err := xassert.StringFromEnv(
+			AuthUsernameEnvVar,
+			c.authenticationUsername,
+		)
+		c.authenticationUsername = authenticationUsername
+		if err != nil {
+			return c, err
+		}
+		authenticationPassword, err := xassert.StringFromEnv(
+			AuthPasswordEnvVar,
+			c.authenticationPassword,
+		)
+		c.authenticationPassword = authenticationPassword
+		if err != nil {
+			return c, err
+		}
 		return c, nil
 	}
 	result, err := resolver()
@@ -290,4 +329,22 @@ func (c Config) DefaultGoogleChromeRpccBufferSize() int64 {
 
 func (c Config) GoogleChromeIgnoreCertificateErrors() bool {
 	return c.googleChromeIgnoreCertificateErrors
+}
+
+// EnableAuthentication returns the bool from
+// the configuration.
+func (c Config) EnableAuthentication() bool {
+	return c.enableAuthentication
+}
+
+// AuthenticationUsername returns the string from
+// the configuration.
+func (c Config) AuthenticationUsername() string {
+	return c.authenticationUsername
+}
+
+// AuthenticationPassword returns the string from
+// the configuration.
+func (c Config) AuthenticationPassword() string {
+	return c.authenticationPassword
 }

@@ -35,6 +35,16 @@ For instance, `/gotenberg/` is a valid value while `gotenberg` is not.
 
 > This is useful if you wish to do service discovery via URL paths.
 
+## Enable authentication
+
+In order protect the API exposed by Gotenberg, you can use the `ENABLE_AUTH` environment
+variable and set your desired username and password on `AUTH_USERNAME` and `AUTH_PASSWORD`.
+
+The `ENABLE_AUTH` environment variable takes the strings `"0"` or `"1"` as value
+where `1` means `true`
+
+> This configuration enables Basic HTTP Authentication on all HTTP endpoints.
+
 ## Disable Google Chrome
 
 In order to save some resources, the Gotenberg image accepts the environment variable `DISABLE_GOOGLE_CHROME`
