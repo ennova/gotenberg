@@ -26,7 +26,7 @@ func New(config conf.Config) *echo.Echo {
 	srv.Use(cleanupMiddleware())
 	srv.Use(errorMiddleware())
 	srv.GET(pingEndpoint(config), pingHandler)
-	srv.POST(mergeEndpoint(config), mergeHandler)
+	// srv.POST(mergeEndpoint(config), mergeHandler)
 	if config.DisableGoogleChrome() && config.DisableUnoconv() {
 		return srv
 	}
@@ -36,7 +36,7 @@ func New(config conf.Config) *echo.Echo {
 		srv.POST(markdownEndpoint(config), markdownHandler)
 	}
 	if !config.DisableUnoconv() {
-		srv.POST(officeEndpoint(config), officeHandler)
+		// srv.POST(officeEndpoint(config), officeHandler)
 	}
 	return srv
 }

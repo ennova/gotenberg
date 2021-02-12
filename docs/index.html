@@ -11,7 +11,7 @@
     <meta charset="utf-8"/>
     <meta http-equiv="x-ua-compatible" content="ie=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>Gotenberg · A Docker-powered stateless API for converting HTML, Markdown and Office documents to PDF.</title>
+    <title>Gotenberg · A Docker-powered stateless API for converting HTML and Markdown documents to PDF.</title>
     <link rel="apple-touch-icon-precomposed" sizes="57x57" href="theme/gotenberg/img/apple-touch-icon-57x57.png"/>
     <link rel="apple-touch-icon-precomposed" sizes="114x114" href="theme/gotenberg/img/apple-touch-icon-114x114.png"/>
     <link rel="apple-touch-icon-precomposed" sizes="72x72" href="theme/gotenberg/img/apple-touch-icon-72x72.png"/>
@@ -34,7 +34,7 @@
           <div class="Title center">
             <img src="https://user-images.githubusercontent.com/8983173/69229423-ac731300-0b85-11ea-8c2e-2cc00ecdb269.PNG" alt="Gotenberg logo" width="250" height="250"/>
             <span class="text">Gotenberg</span>
-            <span class="subtext">A Docker-powered stateless API for converting HTML, Markdown and Office documents to PDF.</span>
+            <span class="subtext">A Docker-powered stateless API for converting HTML and Markdown to PDF.</span>
           </div>
         </div>
 
@@ -70,6 +70,7 @@
                   <a href="#markdown">Markdown</a>
                 </div>
               
+		<!--
                 <div class="item">
                   <a href="#office">Office</a>
                 </div>
@@ -77,6 +78,7 @@
                 <div class="item">
                   <a href="#merge">Merge</a>
                 </div>
+		-->
               
                 <div class="item">
                   <a href="#timeout">Timeout</a>
@@ -115,11 +117,10 @@
                 <h1 class="Heading"><a class="Anchor" aria-hidden="true" id="introduction" href="#introduction">
 	<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
 </a>Introduction</h1>
-                <p><a href="https://github.com/thecodingmachine/gotenberg/">Gotenberg</a> is a Docker-powered stateless API for converting HTML, Markdown and Office documents to PDF.</p>
+                <p><a href="https://github.com/thecodingmachine/gotenberg/">Gotenberg</a> is a Docker-powered stateless API for converting HTML and Markdown documents to PDF.</p>
 
 <ul>
 <li>HTML and Markdown conversions using Google Chrome headless</li>
-<li>Office conversions (.txt, .rtf, .docx, .doc, .odt, .pptx, .ppt, .odp and so on) using <a href="https://github.com/dagwieers/unoconv">unoconv</a></li>
 <li>Assets: send your header, footer, images, fonts, stylesheets and so on for converting your HTML and Markdown to beaufitul PDFs!</li>
 <li>Easily interact with the API using our <a href="https://github.com/thecodingmachine/gotenberg-go-client">Go</a> and <a href="https://github.com/thecodingmachine/gotenberg-php-client">PHP</a> libraries</li>
 </ul>
@@ -358,6 +359,7 @@ See the <a href="#html.rpcc_buffer_size">rpcc buffer size section</a>.</p>
 
 <p><strong>You should be careful with this feature and only enable it in your development environment.</strong></p>
 
+<!--
 <h2 class="Heading"><a class="Anchor" aria-hidden="true" id="environment_variables.disable_libre_office_unoconv" href="#environment_variables.disable_libre_office_unoconv">
 	<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
 </a>Disable LibreOffice (unoconv)</h2>
@@ -368,6 +370,7 @@ See the <a href="#html.rpcc_buffer_size">rpcc buffer size section</a>.</p>
 <p>If LibreOffice (unoconv) is disabled, the following conversion will <strong>not</strong> be available anymore:
 <a href="#office">Office</a></p>
 </blockquote>
+-->
 
 <h2 class="Heading"><a class="Anchor" aria-hidden="true" id="environment_variables.default_wait_timeout" href="#environment_variables.default_wait_timeout">
 	<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
@@ -1137,6 +1140,7 @@ in the file <code>index.html</code>. This function will convert a given markdown
 
               </div>
             
+              <!--
               <div class="Page" id="office">
                 <h1 class="Heading"><a class="Anchor" aria-hidden="true" id="office" href="#office">
 	<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
@@ -1392,6 +1396,7 @@ will merge them and return the resulting PDF file.</p>
 </pre>
 
               </div>
+              -->
             
               <div class="Page" id="timeout">
                 <h1 class="Heading"><a class="Anchor" aria-hidden="true" id="timeout" href="#timeout">
@@ -1694,8 +1699,10 @@ Otherwise a random filename is used.</p>
 <p>Gotenberg tries to abstract as much complexity as possible but it can
 only do it to a certain extent.</p>
 
+<!--
 <p>For instance, <a href="#office">Office</a> and <a href="#merge">Merge</a> endpoints will start respectively as many LibreOffice (unoconv) and PDTk
 instances as there are requests. The limitation here is the available memory and CPU usage.</p>
+-->
 
 <p>On another hand, for the <a href="#html">HTML</a>, <a href="#url">URL</a> and <a href="#markdown">Markdown</a> endpoints, the API does only 6 conversions in parallel.
 Indeed, Google Chrome misbehaves if there are too many concurrent conversions.</p>

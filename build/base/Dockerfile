@@ -24,46 +24,6 @@ RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add
     apt-get -y --allow-unauthenticated install google-chrome-stable
 
 # |--------------------------------------------------------------------------
-# | LibreOffice
-# |--------------------------------------------------------------------------
-# |
-# | Installs LibreOffice.
-# |
-
-# https://github.com/nextcloud/docker/issues/380
-RUN mkdir -p /usr/share/man/man1mkdir -p /usr/share/man/man1 &&\ 
-    echo "deb http://httpredir.debian.org/debian/ buster-backports main contrib non-free" >> /etc/apt/sources.list &&\
-    apt-get update &&\
-    apt-get -t buster-backports -y install libreoffice
-
-# |--------------------------------------------------------------------------
-# | Unoconv
-# |--------------------------------------------------------------------------
-# |
-# | Installs unoconv.
-# |
-
-ENV UNO_URL=https://raw.githubusercontent.com/dagwieers/unoconv/master/unoconv
-
-RUN curl -Ls $UNO_URL -o /usr/bin/unoconv &&\
-    chmod +x /usr/bin/unoconv &&\
-    ln -s /usr/bin/python3 /usr/bin/python &&\
-    unoconv --version
-
-# |--------------------------------------------------------------------------
-# | PDFtk
-# |--------------------------------------------------------------------------
-# |
-# | Installs PDFtk as an alternative to pdfcpu for merging PDFs.
-# | https://github.com/thecodingmachine/gotenberg/issues/29
-# |
-
-ARG PDFTK_VERSION=924565150
-
-RUN wget -O /usr/bin/pdftk "https://gitlab.com/pdftk-java/pdftk/-/jobs/${PDFTK_VERSION}/artifacts/raw/build/native-image/pdftk" \
-    && chmod a+x /usr/bin/pdftk
-
-# |--------------------------------------------------------------------------
 # | Fonts
 # |--------------------------------------------------------------------------
 # |

@@ -76,13 +76,6 @@ You may allow insecure connections by setting the `GOOGLE_CHROME_IGNORE_CERTIFIC
 
 **You should be careful with this feature and only enable it in your development environment.**
 
-## Disable LibreOffice (unoconv)
-
-You may also disable LibreOffice (unoconv) with `DISABLE_UNOCONV`.
-
-> If LibreOffice (unoconv) is disabled, the following conversion will **not** be available anymore:
-> [Office](#office)
-
 ## Default wait timeout
 
 By default, the API will wait 10 seconds before it considers the conversion to be unsuccessful.
