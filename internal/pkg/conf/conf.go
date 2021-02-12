@@ -86,7 +86,7 @@ func DefaultConfig() Config {
 		defaultWebhookURLTimeout:            10.0,
 		defaultListenPort:                   3000,
 		disableGoogleChrome:                 false,
-		disableUnoconv:                      false,
+		disableUnoconv:                      true,
 		logLevel:                            xlog.InfoLevel,
 		rootPath:                            "/",
 		maximumGoogleChromeRpccBufferSize:   104857600, // ~100 MB
