@@ -14,7 +14,7 @@ func TestArgKeys(t *testing.T) {
 		ResultFilenameArgKey,
 		WaitTimeoutArgKey,
 		WebhookURLArgKey,
-		WebhookURLTimeoutArgKey,
+		WebhookURLMethodArgKey,
 		RemoteURLArgKey,
 		WaitDelayArgKey,
 		PaperWidthArgKey,

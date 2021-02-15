@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/hashicorp/go-retryablehttp"
@@ -322,6 +321,10 @@ func convertAsync(ctx context.Context, p printer.Printer, filename, fpath string
 	if err != nil {
 		return xerror.New(op, err)
 	}
+	webhookURLMethod, err := r.StringArg(resource.WebhookURLMethodArgKey, "POST")
+	if err != nil {
+		return xerror.New(op, err)
+	}
 	go func() {
 		defer r.Close()
 		if err := p.Print(fpath); err != nil {
@@ -347,7 +350,7 @@ func convertAsync(ctx context.Context, p printer.Printer, filename, fpath string
 		httpClient := retryablehttp.NewClient()
 		httpClient.Logger = retryablehttp.LeveledLogger(xlog.NewLeveledLogger(logger, op))
 		httpClient.HTTPClient.Timeout = xtime.Duration(webhookURLTimeout)
-		req, err := retryablehttp.NewRequest(http.MethodPost, webhookURL, f)
+		req, err := retryablehttp.NewRequest(webhookURLMethod, webhookURL, f)
 		if err != nil {
 			xerr := xerror.New(op, err)
 			logger.ErrorOp(xerror.Op(xerr), xerr)
@@ -405,6 +408,12 @@ func sendToErrorWebhook(ctx context.Context, xerr error) {
 		logger.ErrorOp(xerror.Op(xerr), xerr)
 		return
 	}
+	webhookURLMethod, err := r.StringArg(resource.WebhookURLMethodArgKey, "POST")
+	if err != nil {
+		xerr := xerror.New(op, err)
+		logger.ErrorOp(xerror.Op(xerr), xerr)
+		return
+	}
 	if r.HasArg(resource.WebhookErrorURLArgKey) {
 		values := map[string]string{"status": string(xerror.Code(xerr)), "message": xerror.Message(xerr)}
 		jsonValue, err := json.Marshal(values)
@@ -413,7 +422,7 @@ func sendToErrorWebhook(ctx context.Context, xerr error) {
 			logger.ErrorOp(xerror.Op(xerr), xerr)
 			return
 		}
-		req, err := retryablehttp.NewRequest(http.MethodPost, webhookErrorURL, bytes.NewBuffer(jsonValue))
+		req, err := retryablehttp.NewRequest(webhookURLMethod, webhookErrorURL, bytes.NewBuffer(jsonValue))
 		if err != nil {
 			xerr := xerror.New(op, err)
 			logger.ErrorOp(xerror.Op(xerr), xerr)
