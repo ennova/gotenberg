@@ -87,6 +87,7 @@ func chromePrinterOptions(r resource.Resource, config conf.Config) (printer.Chro
 			CustomHTTPHeaders:  make(map[string]string),
 			Scale:              scale,
 			MaxConnections:     maxConnections,
+			WaitForConnection:  waitForConnection,
 		}, nil
 	}
 	opts, err := resolver()

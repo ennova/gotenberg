@@ -69,6 +69,9 @@ const (
 	// ScaleArgKey is the key
 	// of the argument "scale".
 	ScaleArgKey ArgKey = "scale"
+	// WaitForConnectionArgKey is the key
+	// of the argument "waitForConnection".
+	WaitForConnectionArgKey ArgKey = "waitForConnection"
 )
 
 /*
@@ -97,6 +100,7 @@ func ArgKeys() []ArgKey {
 		PageRangesArgKey,
 		GoogleChromeRpccBufferSizeArgKey,
 		ScaleArgKey,
+		WaitForConnectionArgKey,
 	}
 }
 
