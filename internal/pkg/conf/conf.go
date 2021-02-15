@@ -43,6 +43,9 @@ const (
 	// GoogleChromeIgnoreCertificateErrorsEnvVar contains the name
 	// of the environment variable "GOOGLE_CHROME_IGNORE_CERTIFICATE_ERRORS".
 	GoogleChromeIgnoreCertificateErrorsEnvVar string = "GOOGLE_CHROME_IGNORE_CERTIFICATE_ERRORS"
+	// GoogleChromeMaxConnectionsEnvVar contains the name
+	// of the environment variable "GOOGLE_CHROME_MAX_CONNECTIONS".
+	GoogleChromeMaxConnectionsEnvVar string = "GOOGLE_CHROME_MAX_CONNECTIONS"
 	// EnableAuthEnvVar contains the name
 	// of the environment variable "ENABLE_AUTH".
 	EnableAuthEnvVar string = "ENABLE_AUTH"
@@ -66,6 +69,7 @@ type Config struct {
 	disableGoogleChrome                 bool
 	disableUnoconv                      bool
 	googleChromeIgnoreCertificateErrors bool
+	googleChromeMaxConnections          int64
 	logLevel                            xlog.Level
 	rootPath                            string
 	maximumGoogleChromeRpccBufferSize   int64
@@ -92,6 +96,7 @@ func DefaultConfig() Config {
 		maximumGoogleChromeRpccBufferSize:   104857600, // ~100 MB
 		defaultGoogleChromeRpccBufferSize:   1048576,   // 1 MB
 		googleChromeIgnoreCertificateErrors: false,
+		googleChromeMaxConnections:          6,
 		enableAuthentication:                false,
 		authenticationUsername:              "",
 		authenticationPassword:              "",
@@ -216,6 +221,16 @@ func FromEnv() (Config, error) {
 		if err != nil {
 			return c, err
 		}
+		googleChromeMaxConnections, err := xassert.Int64FromEnv(
+			GoogleChromeMaxConnectionsEnvVar,
+			c.googleChromeMaxConnections,
+			xassert.Int64NotInferiorTo(1),
+			xassert.Int64NotSuperiorTo(6),
+		)
+		c.googleChromeMaxConnections = googleChromeMaxConnections
+		if err != nil {
+			return c, err
+		}
 		enableAuthentication, err := xassert.BoolFromEnv(
 			EnableAuthEnvVar,
 			c.enableAuthentication,
@@ -329,6 +344,10 @@ func (c Config) DefaultGoogleChromeRpccBufferSize() int64 {
 
 func (c Config) GoogleChromeIgnoreCertificateErrors() bool {
 	return c.googleChromeIgnoreCertificateErrors
+}
+
+func (c Config) GoogleChromeMaxConnections() int64 {
+	return c.googleChromeMaxConnections
 }
 
 // EnableAuthentication returns the bool from

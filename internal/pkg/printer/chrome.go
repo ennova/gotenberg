@@ -48,6 +48,7 @@ type ChromePrinterOptions struct {
 	RpccBufferSize     int64
 	CustomHTTPHeaders  map[string]string
 	Scale              float64
+	MaxConnections     int64
 }
 
 // DefaultChromePrinterOptions returns the default
@@ -71,16 +72,16 @@ func DefaultChromePrinterOptions(config conf.Config) ChromePrinterOptions {
 		RpccBufferSize:     config.DefaultGoogleChromeRpccBufferSize(),
 		CustomHTTPHeaders:  make(map[string]string),
 		Scale:              1.0,
+		MaxConnections:     config.GoogleChromeMaxConnections(),
+		WaitForConnection:  config.GoogleChromeWaitForConnection(),
 	}
 }
 
 // nolint: gochecknoglobals
 var lockChrome = make(chan struct{}, 1)
 
-const maxDevtConnections int = 6
-
 // nolint: gochecknoglobals
-var devtConnections int
+var devtConnections int64
 
 func (p chromePrinter) Print(destination string) error {
 	const op string = "printer.chromePrinter.Print"
@@ -226,7 +227,7 @@ func (p chromePrinter) Print(destination string) error {
 		}
 		return nil
 	}
-	if devtConnections+1 < maxDevtConnections {
+	if devtConnections+1 < p.opts.MaxConnections {
 		p.logger.DebugOp(op, "skipping lock acquisition...")
 		devtConnections++
 		err := resolver()
