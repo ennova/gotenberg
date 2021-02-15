@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/labstack/echo/v4"
 	"github.com/thecodingmachine/gotenberg/internal/app/xhttp/pkg/context"
 	"github.com/thecodingmachine/gotenberg/internal/app/xhttp/pkg/resource"
@@ -342,10 +343,9 @@ func convertAsync(ctx context.Context, p printer.Printer, filename, fpath string
 			filename,
 			webhookURL,
 		)
-		httpClient := &http.Client{
-			Timeout: xtime.Duration(webhookURLTimeout),
-		}
-		req, err := http.NewRequest(http.MethodPost, webhookURL, f)
+		httpClient := retryablehttp.NewClient()
+		httpClient.HTTPClient.Timeout = xtime.Duration(webhookURLTimeout)
+		req, err := retryablehttp.NewRequest(http.MethodPost, webhookURL, f)
 		if err != nil {
 			xerr := xerror.New(op, err)
 			logger.ErrorOp(xerror.Op(xerr), xerr)
@@ -410,16 +410,15 @@ func sendToErrorWebhook(ctx context.Context, xerr error) {
 			logger.ErrorOp(xerror.Op(xerr), xerr)
 			return
 		}
-		req, err := http.NewRequest(http.MethodPost, webhookErrorURL, bytes.NewBuffer(jsonValue))
+		req, err := retryablehttp.NewRequest(http.MethodPost, webhookErrorURL, bytes.NewBuffer(jsonValue))
 		if err != nil {
 			xerr := xerror.New(op, err)
 			logger.ErrorOp(xerror.Op(xerr), xerr)
 			return
 		}
 		req.Header.Set(echo.HeaderContentType, "application/json")
-		httpClient := &http.Client{
-			Timeout: xtime.Duration(webhookURLTimeout),
-		}
+		httpClient := retryablehttp.NewClient()
+		httpClient.HTTPClient.Timeout = xtime.Duration(webhookURLTimeout)
 		resp, err := httpClient.Do(req) /* #nosec */
 		if err != nil {
 			xerr := xerror.New(op, err)
