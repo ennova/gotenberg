@@ -429,5 +429,10 @@ func sendToErrorWebhook(ctx context.Context, xerr error) {
 			return
 		}
 		defer resp.Body.Close()
+		logger.DebugOpf(
+			op,
+			"error sent to '%s'",
+			webhookErrorURL,
+		)
 	}
 }
