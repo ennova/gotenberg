@@ -49,6 +49,7 @@ type ChromePrinterOptions struct {
 	CustomHTTPHeaders  map[string]string
 	Scale              float64
 	MaxConnections     int64
+	WaitForConnection  bool
 }
 
 // DefaultChromePrinterOptions returns the default
@@ -239,6 +240,13 @@ func (p chromePrinter) Print(destination string) error {
 			)
 		}
 		return nil
+	}
+	if devtConnections >= p.opts.MaxConnections && !p.opts.WaitForConnection {
+		return xerror.Invalid(
+			op,
+			"no available connections",
+			nil,
+		)
 	}
 	p.logger.DebugOp(op, "waiting lock to be acquired...")
 	select {

@@ -46,6 +46,9 @@ const (
 	// GoogleChromeMaxConnectionsEnvVar contains the name
 	// of the environment variable "GOOGLE_CHROME_MAX_CONNECTIONS".
 	GoogleChromeMaxConnectionsEnvVar string = "GOOGLE_CHROME_MAX_CONNECTIONS"
+	// GoogleChromeWaitForConnectionEnvVar contains the name
+	// of the environment variable "GOOGLE_CHROME_WAIT_FOR_CONNECTION".
+	GoogleChromeWaitForConnectionEnvVar string = "GOOGLE_CHROME_WAIT_FOR_CONNECTION"
 	// EnableAuthEnvVar contains the name
 	// of the environment variable "ENABLE_AUTH".
 	EnableAuthEnvVar string = "ENABLE_AUTH"
@@ -70,6 +73,7 @@ type Config struct {
 	disableUnoconv                      bool
 	googleChromeIgnoreCertificateErrors bool
 	googleChromeMaxConnections          int64
+	googleChromeWaitForConnection       bool
 	logLevel                            xlog.Level
 	rootPath                            string
 	maximumGoogleChromeRpccBufferSize   int64
@@ -97,6 +101,7 @@ func DefaultConfig() Config {
 		defaultGoogleChromeRpccBufferSize:   1048576,   // 1 MB
 		googleChromeIgnoreCertificateErrors: false,
 		googleChromeMaxConnections:          6,
+		googleChromeWaitForConnection:       true,
 		enableAuthentication:                false,
 		authenticationUsername:              "",
 		authenticationPassword:              "",
@@ -231,6 +236,14 @@ func FromEnv() (Config, error) {
 		if err != nil {
 			return c, err
 		}
+		googleChromeWaitForConnection, err := xassert.BoolFromEnv(
+			GoogleChromeWaitForConnectionEnvVar,
+			c.googleChromeWaitForConnection,
+		)
+		c.googleChromeWaitForConnection = googleChromeWaitForConnection
+		if err != nil {
+			return c, err
+		}
 		enableAuthentication, err := xassert.BoolFromEnv(
 			EnableAuthEnvVar,
 			c.enableAuthentication,
@@ -348,6 +361,10 @@ func (c Config) GoogleChromeIgnoreCertificateErrors() bool {
 
 func (c Config) GoogleChromeMaxConnections() int64 {
 	return c.googleChromeMaxConnections
+}
+
+func (c Config) GoogleChromeWaitForConnection() bool {
+	return c.googleChromeWaitForConnection
 }
 
 // EnableAuthentication returns the bool from
