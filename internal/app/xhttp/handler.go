@@ -396,6 +396,12 @@ func sendToErrorWebhook(ctx context.Context, xerr error) {
 		logger.ErrorOp(xerror.Op(xerr), xerr)
 		return
 	}
+	webhookURLTimeout, err := resource.WebhookURLTimeoutArg(r, ctx.Config())
+	if err != nil {
+		xerr := xerror.New(op, err)
+		logger.ErrorOp(xerror.Op(xerr), xerr)
+		return
+	}
 	if r.HasArg(resource.WebhookErrorURLArgKey) {
 		values := map[string]string{"status": string(xerror.Code(xerr)), "message": xerror.Message(xerr)}
 		jsonValue, err := json.Marshal(values)
@@ -411,7 +417,9 @@ func sendToErrorWebhook(ctx context.Context, xerr error) {
 			return
 		}
 		req.Header.Set(echo.HeaderContentType, "application/json")
-		httpClient := &http.Client{}
+		httpClient := &http.Client{
+			Timeout: xtime.Duration(webhookURLTimeout),
+		}
 		resp, err := httpClient.Do(req) /* #nosec */
 		if err != nil {
 			xerr := xerror.New(op, err)
