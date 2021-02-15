@@ -15,6 +15,7 @@ import (
 	"github.com/thecodingmachine/gotenberg/internal/pkg/conf"
 	"github.com/thecodingmachine/gotenberg/internal/pkg/printer"
 	"github.com/thecodingmachine/gotenberg/internal/pkg/xerror"
+	"github.com/thecodingmachine/gotenberg/internal/pkg/xlog"
 	"github.com/thecodingmachine/gotenberg/internal/pkg/xrand"
 	"github.com/thecodingmachine/gotenberg/internal/pkg/xtime"
 )
@@ -344,6 +345,7 @@ func convertAsync(ctx context.Context, p printer.Printer, filename, fpath string
 			webhookURL,
 		)
 		httpClient := retryablehttp.NewClient()
+		httpClient.Logger = retryablehttp.LeveledLogger(xlog.NewLeveledLogger(logger, op))
 		httpClient.HTTPClient.Timeout = xtime.Duration(webhookURLTimeout)
 		req, err := retryablehttp.NewRequest(http.MethodPost, webhookURL, f)
 		if err != nil {
@@ -418,6 +420,7 @@ func sendToErrorWebhook(ctx context.Context, xerr error) {
 		}
 		req.Header.Set(echo.HeaderContentType, "application/json")
 		httpClient := retryablehttp.NewClient()
+		httpClient.Logger = retryablehttp.LeveledLogger(xlog.NewLeveledLogger(logger, op))
 		httpClient.HTTPClient.Timeout = xtime.Duration(webhookURLTimeout)
 		resp, err := httpClient.Do(req) /* #nosec */
 		if err != nil {

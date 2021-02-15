@@ -139,3 +139,41 @@ func (l Logger) ErrorOpf(op, format string, args ...interface{}) {
 func (l Logger) FatalOp(op string, err error) {
 	l.entry.WithField("op", op).Fatal(err.Error())
 }
+
+type LeveledLogger struct {
+	logger Logger
+	op     string
+}
+
+func NewLeveledLogger(logger Logger, op string) *LeveledLogger {
+	return &LeveledLogger{
+		logger: logger,
+		op:     op,
+	}
+}
+
+func (l *LeveledLogger) fields(keysAndValues ...interface{}) map[string]interface{} {
+	fields := make(map[string]interface{})
+
+	for i := 0; i < len(keysAndValues)-1; i += 2 {
+		fields[keysAndValues[i].(string)] = keysAndValues[i+1]
+	}
+
+	return fields
+}
+
+func (l *LeveledLogger) Error(msg string, keysAndValues ...interface{}) {
+	l.logger.WithFields(l.fields(keysAndValues...)).ErrorOpf(l.op, "%s", msg)
+}
+
+func (l *LeveledLogger) Info(msg string, keysAndValues ...interface{}) {
+	l.logger.WithFields(l.fields(keysAndValues...)).InfoOpf(l.op, "%s", msg)
+}
+
+func (l *LeveledLogger) Debug(msg string, keysAndValues ...interface{}) {
+	l.logger.WithFields(l.fields(keysAndValues...)).DebugOpf(l.op, "%s", msg)
+}
+
+func (l *LeveledLogger) Warn(msg string, keysAndValues ...interface{}) {
+	l.logger.WithFields(l.fields(keysAndValues...)).ErrorOpf(l.op, "%s", msg)
+}
