@@ -77,7 +77,7 @@ func DefaultChromePrinterOptions(config conf.Config) ChromePrinterOptions {
 // nolint: gochecknoglobals
 var lockChrome = make(chan struct{}, 1)
 
-const maxDevtConnections int = 5
+const maxDevtConnections int = 6
 
 // nolint: gochecknoglobals
 var devtConnections int
@@ -226,7 +226,7 @@ func (p chromePrinter) Print(destination string) error {
 		}
 		return nil
 	}
-	if devtConnections < maxDevtConnections {
+	if devtConnections+1 < maxDevtConnections {
 		p.logger.DebugOp(op, "skipping lock acquisition...")
 		devtConnections++
 		err := resolver()
