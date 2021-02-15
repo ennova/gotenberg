@@ -341,6 +341,13 @@ func convertAsync(ctx context.Context, p printer.Printer, filename, fpath string
 			return
 		}
 		defer f.Close()
+		stat, err := f.Stat()
+		if err != nil {
+			xerr := xerror.New(op, err)
+			logger.ErrorOp(xerror.Op(xerr), xerr)
+			sendToErrorWebhook(ctx, xerr)
+			return
+		}
 		logger.DebugOpf(
 			op,
 			"preparing to send result file '%s' to '%s'...",
@@ -357,6 +364,7 @@ func convertAsync(ctx context.Context, p printer.Printer, filename, fpath string
 			return
 		}
 		req.Header.Set(echo.HeaderContentType, "application/pdf")
+		req.ContentLength = stat.Size()
 		// set custom headers (if any).
 		customHTTPHeaders := resource.WebhookURLCustomHTTPHeaders(r)
 		if len(customHTTPHeaders) > 0 {
