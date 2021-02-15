@@ -380,9 +380,10 @@ func convertAsync(ctx context.Context, p printer.Printer, filename, fpath string
 		defer resp.Body.Close()
 		logger.DebugOpf(
 			op,
-			"result file '%s' sent to '%s'",
+			"result file '%s' sent to '%s' (status: %s)",
 			filename,
 			webhookURL,
+			resp.Status,
 		)
 	}()
 	return nil
@@ -431,8 +432,9 @@ func sendToErrorWebhook(ctx context.Context, xerr error) {
 		defer resp.Body.Close()
 		logger.DebugOpf(
 			op,
-			"error sent to '%s'",
+			"error sent to '%s' (status: %s)",
 			webhookErrorURL,
+			resp.Status,
 		)
 	}
 }
