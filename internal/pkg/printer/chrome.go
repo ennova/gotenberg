@@ -161,8 +161,15 @@ func (p chromePrinter) Print(destination string) error {
 		if err := p.setCustomHTTPHeaders(ctx, targetClient); err != nil {
 			return err
 		}
+		// listen for exceptions
+		exceptionEvent, err := targetClient.Runtime.ExceptionThrown(ctx)
+		if err != nil {
+			return err
+		}
 
 		waiter := func() error {
+			// stop listening to async events when we are done waiting
+			defer exceptionEvent.Close()
 			// listen for all events.
 			if err := p.listenEvents(ctx, targetClient); err != nil {
 				return err
@@ -185,7 +192,26 @@ func (p chromePrinter) Print(destination string) error {
 			return nil
 		}
 
+		exceptionListener := func() error {
+			for {
+				exception, err := exceptionEvent.Recv()
+				if err != nil {
+					if strings.Contains(err.Error(), "rpcc: the stream is closing") {
+						return nil
+					}
+					return err
+				}
+				p.logger.DebugOpf(op, "event 'exceptionThrown' received: %s", exception.ExceptionDetails)
+				return xerror.Invalid(
+					op,
+					exception.ExceptionDetails.Error(),
+					nil,
+				)
+			}
+		}
+
 		if err := runBatch(
+			exceptionListener,
 			waiter,
 		); err != nil {
 			return err
