@@ -161,24 +161,34 @@ func (p chromePrinter) Print(destination string) error {
 		if err := p.setCustomHTTPHeaders(ctx, targetClient); err != nil {
 			return err
 		}
-		// listen for all events.
-		if err := p.listenEvents(ctx, targetClient); err != nil {
-			return err
-		}
-		// apply a wait delay (if any).
-		if p.opts.WaitDelay > 0.0 {
-			// wait for a given amount of time (useful for javascript delay).
-			p.logger.DebugOpf(op, "applying a wait delay of '%.2fs'...", p.opts.WaitDelay)
-			time.Sleep(xtime.Duration(p.opts.WaitDelay))
-		} else {
-			p.logger.DebugOp(op, "no wait delay to apply, moving on...")
-		}
 
-		if p.opts.WaitJSRenderStatus != "" {
-			p.logger.DebugOp(op, "wait for receiving JS render done status"+p.opts.WaitJSRenderStatus)
-			if err := Wait(ctx, targetClient, "window.status === '"+p.opts.WaitJSRenderStatus+"'"); err != nil {
+		waiter := func() error {
+			// listen for all events.
+			if err := p.listenEvents(ctx, targetClient); err != nil {
 				return err
 			}
+			// apply a wait delay (if any).
+			if p.opts.WaitDelay > 0.0 {
+				// wait for a given amount of time (useful for javascript delay).
+				p.logger.DebugOpf(op, "applying a wait delay of '%.2fs'...", p.opts.WaitDelay)
+				time.Sleep(xtime.Duration(p.opts.WaitDelay))
+			} else {
+				p.logger.DebugOp(op, "no wait delay to apply, moving on...")
+			}
+
+			if p.opts.WaitJSRenderStatus != "" {
+				p.logger.DebugOp(op, "wait for receiving JS render done status"+p.opts.WaitJSRenderStatus)
+				if err := Wait(ctx, targetClient, "window.status === '"+p.opts.WaitJSRenderStatus+"'"); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+
+		if err := runBatch(
+			waiter,
+		); err != nil {
+			return err
 		}
 
 		printToPdfArgs := page.NewPrintToPDFArgs().
