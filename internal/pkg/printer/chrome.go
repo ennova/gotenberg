@@ -1,11 +1,12 @@
 package printer
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/mafredri/cdp/protocol/runtime"
-	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -238,6 +239,7 @@ func (p chromePrinter) Print(destination string) error {
 		}
 
 		printToPdfArgs := page.NewPrintToPDFArgs().
+			SetTransferMode("ReturnAsStream").
 			SetPaperWidth(p.opts.PaperWidth).
 			SetPaperHeight(p.opts.PaperHeight).
 			SetMarginTop(p.opts.MarginTop).
@@ -279,9 +281,20 @@ func (p chromePrinter) Print(destination string) error {
 			}
 			return err
 		}
-		if err := ioutil.WriteFile(destination, printToPDF.Data, 0600); err != nil {
+
+		streamReader := targetClient.NewIOStreamReader(ctx, *printToPDF.Stream)
+		reader := bufio.NewReader(streamReader)
+		file, err := os.OpenFile(destination, os.O_CREATE|os.O_WRONLY, 0600)
+		if err != nil {
 			return err
 		}
+		if _, err = reader.WriteTo(file); err != nil {
+			return err
+		}
+		if err = file.Close(); err != nil {
+			return err
+		}
+
 		return nil
 	}
 	if devtConnections+1 < p.opts.MaxConnections {
