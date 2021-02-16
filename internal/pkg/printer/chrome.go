@@ -162,6 +162,11 @@ func (p chromePrinter) Print(destination string) error {
 		if err := p.setCustomHTTPHeaders(ctx, targetClient); err != nil {
 			return err
 		}
+		// listen for crashes
+		crashEvent, err := targetClient.Inspector.TargetCrashed(ctx)
+		if err != nil {
+			return err
+		}
 		// listen for exceptions
 		exceptionEvent, err := targetClient.Runtime.ExceptionThrown(ctx)
 		if err != nil {
@@ -175,6 +180,7 @@ func (p chromePrinter) Print(destination string) error {
 
 		waiter := func() error {
 			// stop listening to async events when we are done waiting
+			defer crashEvent.Close()
 			defer exceptionEvent.Close()
 			defer consoleEvent.Close()
 			// listen for all events.
@@ -197,6 +203,24 @@ func (p chromePrinter) Print(destination string) error {
 				}
 			}
 			return nil
+		}
+
+		crashListener := func() error {
+			for {
+				_, err := crashEvent.Recv()
+				if err != nil {
+					if strings.Contains(err.Error(), "rpcc: the stream is closing") {
+						return nil
+					}
+					return err
+				}
+				p.logger.DebugOp(op, "event 'targetCrashed' received")
+				return xerror.Invalid(
+					op,
+					"target has crashed",
+					nil,
+				)
+			}
 		}
 
 		exceptionListener := func() error {
@@ -231,6 +255,7 @@ func (p chromePrinter) Print(destination string) error {
 		}
 
 		if err := runBatch(
+			crashListener,
 			exceptionListener,
 			consoleListener,
 			waiter,
