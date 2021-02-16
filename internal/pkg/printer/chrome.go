@@ -166,10 +166,16 @@ func (p chromePrinter) Print(destination string) error {
 		if err != nil {
 			return err
 		}
+		// listen for console messages
+		consoleEvent, err := targetClient.Runtime.ConsoleAPICalled(ctx)
+		if err != nil {
+			return err
+		}
 
 		waiter := func() error {
 			// stop listening to async events when we are done waiting
 			defer exceptionEvent.Close()
+			defer consoleEvent.Close()
 			// listen for all events.
 			if err := p.listenEvents(ctx, targetClient); err != nil {
 				return err
@@ -210,8 +216,22 @@ func (p chromePrinter) Print(destination string) error {
 			}
 		}
 
+		consoleListener := func() error {
+			for {
+				log, err := consoleEvent.Recv()
+				if err != nil {
+					if strings.Contains(err.Error(), "rpcc: the stream is closing") {
+						return nil
+					}
+					return err
+				}
+				p.logger.DebugOpf(op, "event 'consoleAPICalled' received: %s %s", log.Type, log.Args)
+			}
+		}
+
 		if err := runBatch(
 			exceptionListener,
+			consoleListener,
 			waiter,
 		); err != nil {
 			return err
