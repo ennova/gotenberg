@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mafredri/cdp"
@@ -177,12 +178,28 @@ func (p chromePrinter) Print(destination string) error {
 		if err != nil {
 			return err
 		}
+		// listen for network requests, responses, and failures
+		requestWillBeSentEvent, err := targetClient.Network.RequestWillBeSent(ctx)
+		if err != nil {
+			return err
+		}
+		responseReceivedEvent, err := targetClient.Network.ResponseReceived(ctx)
+		if err != nil {
+			return err
+		}
+		loadingFailedEvent, err := targetClient.Network.LoadingFailed(ctx)
+		if err != nil {
+			return err
+		}
 
 		waiter := func() error {
 			// stop listening to async events when we are done waiting
 			defer crashEvent.Close()
 			defer exceptionEvent.Close()
 			defer consoleEvent.Close()
+			defer requestWillBeSentEvent.Close()
+			defer responseReceivedEvent.Close()
+			defer loadingFailedEvent.Close()
 			// listen for all events.
 			if err := p.listenEvents(ctx, targetClient); err != nil {
 				return err
@@ -254,13 +271,106 @@ func (p chromePrinter) Print(destination string) error {
 			}
 		}
 
+		requestURLs := make(map[network.RequestID]string)
+		requestURLsMutex := sync.RWMutex{}
+
+		requestWillBeSentListener := func() error {
+			for {
+				event, err := requestWillBeSentEvent.Recv()
+				if err != nil {
+					if strings.Contains(err.Error(), "rpcc: the stream is closing") {
+						return nil
+					}
+					return err
+				}
+				p.logger.DebugOpf(op, "event 'requestWillBeSent' received: %s %s", event.RequestID, event.Request.URL)
+				requestURLsMutex.Lock()
+				requestURLs[event.RequestID] = event.Request.URL
+				requestURLsMutex.Unlock()
+			}
+		}
+
+		requestErrorMessages := make(map[network.RequestID]string)
+		requestErrorMessagesMutex := sync.RWMutex{}
+
+		responseReceivedListener := func() error {
+			for {
+				event, err := responseReceivedEvent.Recv()
+				if err != nil {
+					if strings.Contains(err.Error(), "rpcc: the stream is closing") {
+						return nil
+					}
+					return err
+				}
+
+				requestURLsMutex.RLock()
+				url := requestURLs[event.RequestID]
+				requestURLsMutex.RUnlock()
+				msg := fmt.Sprintf("%d %s", event.Response.Status, event.Response.StatusText)
+				p.logger.DebugOpf(op, "event 'responseReceived' received: %s: %s", url, msg)
+
+				if event.Response.Status < 400 {
+					continue
+				}
+
+				requestErrorMessagesMutex.Lock()
+				if value, ok := requestErrorMessages[event.RequestID]; !ok || value == "net::ERR_ABORTED" {
+					requestErrorMessages[event.RequestID] = msg
+				}
+				requestErrorMessagesMutex.Unlock()
+			}
+		}
+
+		loadingFailedListener := func() error {
+			for {
+				event, err := loadingFailedEvent.Recv()
+				if err != nil {
+					if strings.Contains(err.Error(), "rpcc: the stream is closing") {
+						return nil
+					}
+					return err
+				}
+
+				requestURLsMutex.RLock()
+				url := requestURLs[event.RequestID]
+				requestURLsMutex.RUnlock()
+				msg := fmt.Sprintf("%s", event.ErrorText)
+				p.logger.DebugOpf(op, "event 'loadingFailed' received: %s: %s", url, msg)
+
+				requestErrorMessagesMutex.Lock()
+				if _, ok := requestErrorMessages[event.RequestID]; !ok {
+					requestErrorMessages[event.RequestID] = msg
+				}
+				requestErrorMessagesMutex.Unlock()
+			}
+		}
+
 		if err := runBatch(
 			crashListener,
 			exceptionListener,
 			consoleListener,
+			requestWillBeSentListener,
+			responseReceivedListener,
+			loadingFailedListener,
 			waiter,
 		); err != nil {
 			return err
+		}
+
+		if len(requestErrorMessages) > 0 {
+			msg := ""
+			for requestID, message := range requestErrorMessages {
+				url := requestURLs[requestID]
+				if len(msg) > 0 {
+					msg += "\n"
+				}
+				msg += fmt.Sprintf("%s: %s", url, message)
+			}
+			return xerror.Invalid(
+				op,
+				msg,
+				nil,
+			)
 		}
 
 		printToPdfArgs := page.NewPrintToPDFArgs().
