@@ -19,7 +19,10 @@ func contextMiddleware(config conf.Config) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// generate a unique identifier for the request.
-			trace := strings.TrimSpace(c.Request().Header.Get("X-Request-Id"))
+			trace := strings.TrimSpace(c.Request().Header.Get("X-Trace-Id"))
+			if len(trace) < 1 {
+				trace = strings.TrimSpace(c.Request().Header.Get("X-Request-Id"))
+			}
 			if len(trace) < 1 {
 				trace = xrand.Get()
 			}
