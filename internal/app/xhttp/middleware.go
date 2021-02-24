@@ -26,6 +26,7 @@ func contextMiddleware(config conf.Config) echo.MiddlewareFunc {
 			if len(trace) < 1 {
 				trace = xrand.Get()
 			}
+			c.Response().Header().Set("X-Trace-Id", trace)
 			// create the logger for this request using
 			// the previous identifier as trace.
 			logger := xlog.New(config.LogLevel(), trace)

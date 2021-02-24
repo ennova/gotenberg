@@ -363,6 +363,7 @@ func convertAsync(ctx context.Context, p printer.Printer, filename, fpath string
 			logger.ErrorOp(xerror.Op(xerr), xerr)
 			return
 		}
+		req.Header.Set("X-Trace-Id", logger.GetTraceId())
 		req.Header.Set(echo.HeaderContentType, "application/pdf")
 		req.ContentLength = stat.Size()
 		// set custom headers (if any).
@@ -436,6 +437,7 @@ func sendToErrorWebhook(ctx context.Context, xerr error) {
 			logger.ErrorOp(xerror.Op(xerr), xerr)
 			return
 		}
+		req.Header.Set("X-Trace-Id", logger.GetTraceId())
 		req.Header.Set(echo.HeaderContentType, "application/json")
 		httpClient := retryablehttp.NewClient()
 		httpClient.Logger = retryablehttp.LeveledLogger(xlog.NewLeveledLogger(logger, op))
