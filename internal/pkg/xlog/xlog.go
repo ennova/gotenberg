@@ -140,6 +140,10 @@ func (l Logger) FatalOp(op string, err error) {
 	l.entry.WithField("op", op).Fatal(err.Error())
 }
 
+func (l Logger) GetTraceId() string {
+	return l.entry.Data["trace"].(string)
+}
+
 type LeveledLogger struct {
 	logger Logger
 	op     string
