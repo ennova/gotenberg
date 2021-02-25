@@ -25,6 +25,9 @@ const (
 	// DefaultListenPortEnvVar contains the name
 	// of the environment variable "DEFAULT_LISTEN_PORT".
 	DefaultListenPortEnvVar string = "DEFAULT_LISTEN_PORT"
+	// PortEnvVar contains the name
+	// of the environment variable "PORT".
+	PortEnvVar string = "PORT"
 	// DisableGoogleChromeEnvVar contains the name
 	// of the environment variable "DISABLE_GOOGLE_CHROME".
 	DisableGoogleChromeEnvVar string = "DISABLE_GOOGLE_CHROME"
@@ -170,6 +173,16 @@ func FromEnv() (Config, error) {
 			xassert.Int64NotSuperiorTo(65535),
 		)
 		c.defaultListenPort = defaultListenPort
+		if err != nil {
+			return c, err
+		}
+		port, err := xassert.Int64FromEnv(
+			PortEnvVar,
+			c.defaultListenPort,
+			xassert.Int64NotInferiorTo(0),
+			xassert.Int64NotSuperiorTo(65535),
+		)
+		c.defaultListenPort = port
 		if err != nil {
 			return c, err
 		}
