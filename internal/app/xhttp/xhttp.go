@@ -12,6 +12,10 @@ func New(config conf.Config) *echo.Echo {
 	srv.HideBanner = true
 	srv.HidePort = true
 
+	if config.RequireHTTPS() {
+		srv.Use(requireHTTPSMiddleware())
+	}
+
 	if config.EnableAuthentication() {
 		srv.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
 			if username == config.AuthenticationUsername() && password == config.AuthenticationPassword() {

@@ -61,6 +61,9 @@ const (
 	// AuthPasswordEnvVar contains the name
 	// of the environment variable "ENABLE_AUTH".
 	AuthPasswordEnvVar string = "AUTH_PASSWORD"
+	// RequireHTTPSEnvVar contains the name
+	// of the environment variable "REQUIRE_HTTPS".
+	RequireHTTPSEnvVar string = "REQUIRE_HTTPS"
 )
 
 // Config contains the application
@@ -84,6 +87,7 @@ type Config struct {
 	enableAuthentication                bool
 	authenticationUsername              string
 	authenticationPassword              string
+	requireHTTPS                        bool
 }
 
 // DefaultConfig returns the default
@@ -108,6 +112,7 @@ func DefaultConfig() Config {
 		enableAuthentication:                false,
 		authenticationUsername:              "",
 		authenticationPassword:              "",
+		requireHTTPS:                        false,
 	}
 }
 
@@ -281,6 +286,14 @@ func FromEnv() (Config, error) {
 		if err != nil {
 			return c, err
 		}
+		requireHTTPS, err := xassert.BoolFromEnv(
+			RequireHTTPSEnvVar,
+			c.requireHTTPS,
+		)
+		c.requireHTTPS = requireHTTPS
+		if err != nil {
+			return c, err
+		}
 		return c, nil
 	}
 	result, err := resolver()
@@ -396,4 +409,10 @@ func (c Config) AuthenticationUsername() string {
 // the configuration.
 func (c Config) AuthenticationPassword() string {
 	return c.authenticationPassword
+}
+
+// RequireHTTPS returns the bool from
+// the configuration.
+func (c Config) RequireHTTPS() bool {
+	return c.requireHTTPS
 }
