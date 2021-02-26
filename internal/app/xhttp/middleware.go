@@ -107,6 +107,23 @@ func errorMiddleware() echo.MiddlewareFunc {
 	}
 }
 
+func requireHTTPSMiddleware() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			request := c.Request()
+			response := c.Response()
+
+			if !c.IsTLS() && request.Header.Get(echo.HeaderXForwardedProto) != "https" {
+				return echo.NewHTTPError(http.StatusForbidden, "HTTPS is required")
+			}
+
+			response.Header().Set(echo.HeaderStrictTransportSecurity, "Strict-Transport-Security: max-age=31536000")
+
+			return next(c)
+		}
+	}
+}
+
 func doCleanup(ctx context.Context, err error) error {
 	const op string = "xhttp.cleanup"
 	if !ctx.HasResource() {
