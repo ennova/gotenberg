@@ -659,7 +659,7 @@ func poll(ctx context.Context, fn func() (bool, error)) error {
 			return nil
 		}
 
-		t.Reset(10 * time.Millisecond)
+		t.Reset(100 * time.Millisecond)
 		select {
 		case <-t.C:
 		case <-ctx.Done():
