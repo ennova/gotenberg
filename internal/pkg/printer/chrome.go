@@ -214,7 +214,14 @@ func (p chromePrinter) Print(destination string) error {
 
 			if p.opts.WaitJSRenderStatus != "" {
 				p.logger.DebugOp(op, "wait for receiving JS render done status"+p.opts.WaitJSRenderStatus)
-				if err := Wait(ctx, targetClient, "window.status === '"+p.opts.WaitJSRenderStatus+"'"); err != nil {
+				err := poll(ctx, func() (bool, error) {
+					var ok bool
+					if err := Eval(ctx, targetClient, "window.status === '"+p.opts.WaitJSRenderStatus+"'", &ok); err != nil {
+						return false, err
+					}
+					return ok, nil
+				})
+				if err != nil {
 					return err
 				}
 			}
@@ -632,16 +639,6 @@ func eval(ctx context.Context, c *cdp.Client, args *runtime.EvaluateArgs, out in
 		return nil
 	}
 	return json.Unmarshal(reply.Result.Value, out)
-}
-
-func Wait(ctx context.Context, c *cdp.Client, expr string) error {
-	return poll(ctx, func() (bool, error) {
-		var ok bool
-		if err := Eval(ctx, c, expr, &ok); err != nil {
-			return false, err
-		}
-		return ok, nil
-	})
 }
 
 func poll(ctx context.Context, fn func() (bool, error)) error {
