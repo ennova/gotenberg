@@ -192,6 +192,8 @@ func (p chromePrinter) Print(destination string) error {
 			return err
 		}
 
+		stopWaiting := false
+
 		waiter := func() error {
 			// stop listening to async events when we are done waiting
 			defer crashEvent.Close()
@@ -210,6 +212,9 @@ func (p chromePrinter) Print(destination string) error {
 				p.logger.DebugOpf(op, "applying a wait delay of '%.2fs'...", p.opts.WaitDelay)
 				deadline := monotime.Monotonic() + xtime.Duration(p.opts.WaitDelay)
 				err := poll(ctx, func() (bool, error) {
+					if stopWaiting {
+						return true, nil
+					}
 					if monotime.Monotonic() >= deadline {
 						return true, nil
 					}
@@ -225,6 +230,9 @@ func (p chromePrinter) Print(destination string) error {
 			if p.opts.WaitJSRenderStatus != "" {
 				p.logger.DebugOp(op, "wait for receiving JS render done status"+p.opts.WaitJSRenderStatus)
 				err := poll(ctx, func() (bool, error) {
+					if stopWaiting {
+						return true, nil
+					}
 					var ok bool
 					if err := Eval(ctx, targetClient, "window.status === '"+p.opts.WaitJSRenderStatus+"'", &ok); err != nil {
 						return false, err
@@ -248,6 +256,7 @@ func (p chromePrinter) Print(destination string) error {
 					return err
 				}
 				p.logger.DebugOp(op, "event 'targetCrashed' received")
+				stopWaiting = true
 				return xerror.Invalid(
 					op,
 					"target has crashed",
@@ -266,6 +275,7 @@ func (p chromePrinter) Print(destination string) error {
 					return err
 				}
 				p.logger.DebugOpf(op, "event 'exceptionThrown' received: %s", exception.ExceptionDetails)
+				stopWaiting = true
 				return xerror.Invalid(
 					op,
 					exception.ExceptionDetails.Error(),
@@ -325,6 +335,7 @@ func (p chromePrinter) Print(destination string) error {
 
 				if value, ok := requestErrorMessages[event.RequestID]; !ok || value == "net::ERR_ABORTED" {
 					requestErrorMessages[event.RequestID] = msg
+					stopWaiting = true
 				}
 			}
 		}
@@ -345,6 +356,7 @@ func (p chromePrinter) Print(destination string) error {
 
 				if _, ok := requestErrorMessages[event.RequestID]; !ok {
 					requestErrorMessages[event.RequestID] = msg
+					stopWaiting = true
 				}
 			}
 		}
