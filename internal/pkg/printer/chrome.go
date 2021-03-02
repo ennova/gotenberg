@@ -16,6 +16,7 @@ import (
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/target"
 	"github.com/mafredri/cdp/rpcc"
+	"github.com/spacemonkeygo/monotime"
 	"github.com/thecodingmachine/gotenberg/internal/pkg/conf"
 	"github.com/thecodingmachine/gotenberg/internal/pkg/xcontext"
 	"github.com/thecodingmachine/gotenberg/internal/pkg/xerror"
@@ -207,7 +208,16 @@ func (p chromePrinter) Print(destination string) error {
 			if p.opts.WaitDelay > 0.0 {
 				// wait for a given amount of time (useful for javascript delay).
 				p.logger.DebugOpf(op, "applying a wait delay of '%.2fs'...", p.opts.WaitDelay)
-				time.Sleep(xtime.Duration(p.opts.WaitDelay))
+				deadline := monotime.Monotonic() + xtime.Duration(p.opts.WaitDelay)
+				err := poll(ctx, func() (bool, error) {
+					if monotime.Monotonic() >= deadline {
+						return true, nil
+					}
+					return false, nil
+				})
+				if err != nil {
+					return err
+				}
 			} else {
 				p.logger.DebugOp(op, "no wait delay to apply, moving on...")
 			}
