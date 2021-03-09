@@ -192,6 +192,8 @@ func (p chromePrinter) Print(destination string) error {
 			return err
 		}
 
+		var cancelOperation context.CancelFunc
+
 		waiter := func() error {
 			// stop listening to async events when we are done waiting
 			defer crashEvent.Close()
@@ -200,8 +202,15 @@ func (p chromePrinter) Print(destination string) error {
 			defer requestWillBeSentEvent.Close()
 			defer responseReceivedEvent.Close()
 			defer loadingFailedEvent.Close()
+			// setup cancel context
+			ctx, cancel := context.WithCancel(ctx)
+			defer cancel()
+			cancelOperation = cancel
 			// listen for all events.
 			if err := p.listenEvents(ctx, targetClient); err != nil {
+				if strings.Contains(err.Error(), "context canceled") {
+					return nil
+				}
 				return err
 			}
 			// apply a wait delay (if any).
@@ -216,6 +225,9 @@ func (p chromePrinter) Print(destination string) error {
 			if p.opts.WaitJSRenderStatus != "" {
 				p.logger.DebugOp(op, "wait for receiving JS render done status"+p.opts.WaitJSRenderStatus)
 				if err := Wait(ctx, targetClient, "window.status === '"+p.opts.WaitJSRenderStatus+"'"); err != nil {
+					if strings.Contains(err.Error(), "context canceled") {
+						return nil
+					}
 					return err
 				}
 			}
@@ -232,6 +244,7 @@ func (p chromePrinter) Print(destination string) error {
 					return err
 				}
 				p.logger.DebugOp(op, "event 'targetCrashed' received")
+				cancelOperation()
 				return xerror.Invalid(
 					op,
 					"target has crashed",
@@ -250,6 +263,7 @@ func (p chromePrinter) Print(destination string) error {
 					return err
 				}
 				p.logger.DebugOpf(op, "event 'exceptionThrown' received: %s", exception.ExceptionDetails)
+				cancelOperation()
 				return xerror.Invalid(
 					op,
 					exception.ExceptionDetails.Error(),
@@ -316,6 +330,7 @@ func (p chromePrinter) Print(destination string) error {
 				requestErrorMessagesMutex.Lock()
 				if value, ok := requestErrorMessages[event.RequestID]; !ok || value == "net::ERR_ABORTED" {
 					requestErrorMessages[event.RequestID] = msg
+					cancelOperation()
 				}
 				requestErrorMessagesMutex.Unlock()
 			}
@@ -340,6 +355,7 @@ func (p chromePrinter) Print(destination string) error {
 				requestErrorMessagesMutex.Lock()
 				if _, ok := requestErrorMessages[event.RequestID]; !ok {
 					requestErrorMessages[event.RequestID] = msg
+					cancelOperation()
 				}
 				requestErrorMessagesMutex.Unlock()
 			}
