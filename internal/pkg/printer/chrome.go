@@ -346,6 +346,7 @@ func (p chromePrinter) Print(destination string) error {
 		}
 
 		if err := runBatch(
+			ctx,
 			crashListener,
 			exceptionListener,
 			consoleListener,
@@ -483,6 +484,7 @@ func (p chromePrinter) enableEvents(ctx context.Context, client *cdp.Client) err
 	const op string = "printer.chromePrinter.enableEvents"
 	// enable all the domain events that we're interested in.
 	if err := runBatch(
+		ctx,
 		func() error { return client.DOM.Enable(ctx) },
 		func() error { return client.Network.Enable(ctx, network.NewEnableArgs()) },
 		func() error { return client.Page.Enable(ctx) },
@@ -559,6 +561,7 @@ func (p chromePrinter) listenEvents(ctx context.Context, client *cdp.Client) err
 		}
 		// wait for all events.
 		return runBatch(
+			ctx,
 			func() error {
 				_, err := domContentEventFired.Recv()
 				if err != nil {
@@ -605,10 +608,10 @@ func (p chromePrinter) listenEvents(ctx context.Context, client *cdp.Client) err
 	return nil
 }
 
-func runBatch(fn ...func() error) error {
+func runBatch(ctx context.Context, fn ...func() error) error {
 	// run all functions simultaneously and wait until
 	// execution has completed or an error is encountered.
-	eg := errgroup.Group{}
+	eg, ctx := errgroup.WithContext(ctx)
 	for _, f := range fn {
 		eg.Go(f)
 	}
