@@ -390,65 +390,76 @@ func (p chromePrinter) Print(destination string) error {
 			)
 		}
 
-		printToPdfArgs := page.NewPrintToPDFArgs().
-			SetTransferMode("ReturnAsStream").
-			SetPaperWidth(p.opts.PaperWidth).
-			SetPaperHeight(p.opts.PaperHeight).
-			SetMarginTop(p.opts.MarginTop).
-			SetMarginBottom(p.opts.MarginBottom).
-			SetMarginLeft(p.opts.MarginLeft).
-			SetMarginRight(p.opts.MarginRight).
-			SetLandscape(p.opts.Landscape).
-			SetDisplayHeaderFooter(true).
-			SetHeaderTemplate(p.opts.HeaderHTML).
-			SetFooterTemplate(p.opts.FooterHTML).
-			SetPrintBackground(true).
-			SetScale(p.opts.Scale)
-		if p.opts.PageRanges != "" {
-			printToPdfArgs.SetPageRanges(p.opts.PageRanges)
-		}
-		// printToPDF the page to PDF.
-		p.logger.DebugOp(op, "starting PrintToPDF")
-		printToPDF, err := targetClient.Page.PrintToPDF(
-			ctx,
-			printToPdfArgs,
-		)
-		if err != nil {
-			// find a way to check it in the handlers?
-			if strings.Contains(err.Error(), "Page range syntax error") {
-				return xerror.Invalid(
-					op,
-					fmt.Sprintf("'%s' is not a valid Google Chrome page ranges", p.opts.PageRanges),
-					err,
-				)
+		printer := func() error {
+			printToPdfArgs := page.NewPrintToPDFArgs().
+				SetTransferMode("ReturnAsStream").
+				SetPaperWidth(p.opts.PaperWidth).
+				SetPaperHeight(p.opts.PaperHeight).
+				SetMarginTop(p.opts.MarginTop).
+				SetMarginBottom(p.opts.MarginBottom).
+				SetMarginLeft(p.opts.MarginLeft).
+				SetMarginRight(p.opts.MarginRight).
+				SetLandscape(p.opts.Landscape).
+				SetDisplayHeaderFooter(true).
+				SetHeaderTemplate(p.opts.HeaderHTML).
+				SetFooterTemplate(p.opts.FooterHTML).
+				SetPrintBackground(true).
+				SetScale(p.opts.Scale)
+			if p.opts.PageRanges != "" {
+				printToPdfArgs.SetPageRanges(p.opts.PageRanges)
 			}
-			if strings.Contains(err.Error(), "rpcc: message too large") {
-				return xerror.Invalid(
-					op,
-					fmt.Sprintf(
-						"'%d' bytes are not enough: increase the Google Chrome rpcc buffer size (up to 100 MB)",
-						p.opts.RpccBufferSize,
-					),
-					err,
-				)
+			// printToPDF the page to PDF.
+			p.logger.DebugOp(op, "starting PrintToPDF")
+			printToPDF, err := targetClient.Page.PrintToPDF(
+				ctx,
+				printToPdfArgs,
+			)
+			if err != nil {
+				// find a way to check it in the handlers?
+				if strings.Contains(err.Error(), "Page range syntax error") {
+					return xerror.Invalid(
+						op,
+						fmt.Sprintf("'%s' is not a valid Google Chrome page ranges", p.opts.PageRanges),
+						err,
+					)
+				}
+				if strings.Contains(err.Error(), "rpcc: message too large") {
+					return xerror.Invalid(
+						op,
+						fmt.Sprintf(
+							"'%d' bytes are not enough: increase the Google Chrome rpcc buffer size (up to 100 MB)",
+							p.opts.RpccBufferSize,
+						),
+						err,
+					)
+				}
+				return err
 			}
-			return err
+
+			p.logger.DebugOp(op, "streaming PDF from Chrome")
+			streamReader := targetClient.NewIOStreamReader(ctx, *printToPDF.Stream)
+			reader := bufio.NewReader(streamReader)
+			file, err := os.OpenFile(destination, os.O_CREATE|os.O_WRONLY, 0600)
+			if err != nil {
+				return err
+			}
+			if _, err = reader.WriteTo(file); err != nil {
+				return err
+			}
+			if err = file.Close(); err != nil {
+				return err
+			}
+			p.logger.DebugOp(op, "streaming complete")
+
+			return nil
 		}
 
-		p.logger.DebugOp(op, "streaming PDF from Chrome")
-		streamReader := targetClient.NewIOStreamReader(ctx, *printToPDF.Stream)
-		reader := bufio.NewReader(streamReader)
-		file, err := os.OpenFile(destination, os.O_CREATE|os.O_WRONLY, 0600)
-		if err != nil {
+		if err := runBatch(
+			ctx,
+			printer,
+		); err != nil {
 			return err
 		}
-		if _, err = reader.WriteTo(file); err != nil {
-			return err
-		}
-		if err = file.Close(); err != nil {
-			return err
-		}
-		p.logger.DebugOp(op, "streaming complete")
 
 		return nil
 	}
