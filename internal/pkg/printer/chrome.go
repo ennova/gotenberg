@@ -390,7 +390,21 @@ func (p chromePrinter) Print(destination string) error {
 			)
 		}
 
+		// listen for crashes
+		crashEvent, err = targetClient.Inspector.TargetCrashed(ctx)
+		if err != nil {
+			return err
+		}
+
 		printer := func() error {
+			// stop listening to crashes when we are done printing
+			defer crashEvent.Close()
+
+			// setup cancel context
+			ctx, cancel := context.WithCancel(ctx)
+			defer cancel()
+			cancelOperation = cancel
+
 			printToPdfArgs := page.NewPrintToPDFArgs().
 				SetTransferMode("ReturnAsStream").
 				SetPaperWidth(p.opts.PaperWidth).
@@ -456,6 +470,7 @@ func (p chromePrinter) Print(destination string) error {
 
 		if err := runBatch(
 			ctx,
+			crashListener,
 			printer,
 		); err != nil {
 			return err
