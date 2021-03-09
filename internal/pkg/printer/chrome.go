@@ -208,7 +208,7 @@ func (p chromePrinter) Print(destination string) error {
 			if p.opts.WaitDelay > 0.0 {
 				// wait for a given amount of time (useful for javascript delay).
 				p.logger.DebugOpf(op, "applying a wait delay of '%.2fs'...", p.opts.WaitDelay)
-				time.Sleep(xtime.Duration(p.opts.WaitDelay))
+				sleep(ctx, xtime.Duration(p.opts.WaitDelay))
 			} else {
 				p.logger.DebugOp(op, "no wait delay to apply, moving on...")
 			}
@@ -681,5 +681,12 @@ func poll(ctx context.Context, fn func() (bool, error)) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		}
+	}
+}
+
+func sleep(ctx context.Context, delay time.Duration) {
+	select {
+	case <-ctx.Done():
+	case <-time.After(delay):
 	}
 }
