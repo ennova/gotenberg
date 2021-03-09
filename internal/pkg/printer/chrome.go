@@ -408,6 +408,7 @@ func (p chromePrinter) Print(destination string) error {
 			printToPdfArgs.SetPageRanges(p.opts.PageRanges)
 		}
 		// printToPDF the page to PDF.
+		p.logger.DebugOp(op, "starting PrintToPDF")
 		printToPDF, err := targetClient.Page.PrintToPDF(
 			ctx,
 			printToPdfArgs,
@@ -434,6 +435,7 @@ func (p chromePrinter) Print(destination string) error {
 			return err
 		}
 
+		p.logger.DebugOp(op, "streaming PDF from Chrome")
 		streamReader := targetClient.NewIOStreamReader(ctx, *printToPDF.Stream)
 		reader := bufio.NewReader(streamReader)
 		file, err := os.OpenFile(destination, os.O_CREATE|os.O_WRONLY, 0600)
@@ -446,6 +448,7 @@ func (p chromePrinter) Print(destination string) error {
 		if err = file.Close(); err != nil {
 			return err
 		}
+		p.logger.DebugOp(op, "streaming complete")
 
 		return nil
 	}
