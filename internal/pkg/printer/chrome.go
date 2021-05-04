@@ -452,7 +452,7 @@ func (p chromePrinter) Print(destination string) error {
 
 			p.logger.DebugOp(op, "streaming PDF from Chrome")
 			streamReader := targetClient.NewIOStreamReader(ctx, *printToPDF.Stream)
-			reader := bufio.NewReader(streamReader)
+			reader := bufio.NewReaderSize(streamReader, 32768)
 			file, err := os.OpenFile(destination, os.O_CREATE|os.O_WRONLY, 0600)
 			if err != nil {
 				return err
