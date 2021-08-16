@@ -1,6 +1,8 @@
 package xhttp
 
 import (
+	"encoding/base64"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/thecodingmachine/gotenberg/internal/pkg/conf"
@@ -17,12 +19,25 @@ func New(config conf.Config) *echo.Echo {
 	}
 
 	if config.EnableAuthentication() {
-		srv.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
+		handler := middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
 			if username == config.AuthenticationUsername() && password == config.AuthenticationPassword() {
 				return true, nil
 			}
 			return false, nil
-		}))
+		})
+
+		srv.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				err := handler(next)(c);
+
+				if _, ok := err.(base64.CorruptInputError); ok {
+					c.Request().Header.Del(echo.HeaderAuthorization)
+					err = handler(next)(c);
+				}
+
+				return err;
+			}
+		})
 	}
 
 	srv.Use(contextMiddleware(config))
