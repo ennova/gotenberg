@@ -7,7 +7,7 @@ FROM debian:buster-slim
 # | Libraries used in the build process of this image.
 # |
 
-RUN echo "deb http://httpredir.debian.org/debian/ buster main contrib non-free" > /etc/apt/sources.list &&\
+RUN echo "deb http://httpredir.debian.org/debian/ buster main contrib non-free" >> /etc/apt/sources.list &&\
     apt-get update &&\
     apt-get install -y curl wget gnupg ttf-mscorefonts-installer procps
 
