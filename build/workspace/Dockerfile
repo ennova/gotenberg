@@ -1,6 +1,6 @@
 ARG GOLANG_VERSION
 
-FROM golang:${GOLANG_VERSION}-stretch as golang
+FROM golang:${GOLANG_VERSION}-bullseye as golang
 
 FROM thecodingmachine/gotenberg:base
 
