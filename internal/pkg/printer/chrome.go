@@ -12,6 +12,7 @@ import (
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
+	"github.com/mafredri/cdp/protocol/fetch"
 	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/runtime"
@@ -52,6 +53,7 @@ type ChromePrinterOptions struct {
 	Scale              float64
 	MaxConnections     int64
 	WaitForConnection  bool
+	ResourceDirectory  string
 }
 
 // DefaultChromePrinterOptions returns the default
@@ -178,6 +180,11 @@ func (p chromePrinter) Print(destination string) error {
 		if err != nil {
 			return err
 		}
+		// listen for fetch request paused events
+		requestPaused, err := targetClient.Fetch.RequestPaused(ctx)
+		if err != nil {
+			return err
+		}
 		// listen for network requests, responses, and failures
 		requestWillBeSentEvent, err := targetClient.Network.RequestWillBeSent(ctx)
 		if err != nil {
@@ -199,6 +206,7 @@ func (p chromePrinter) Print(destination string) error {
 			defer crashEvent.Close()
 			defer exceptionEvent.Close()
 			defer consoleEvent.Close()
+			defer requestPaused.Close()
 			defer requestWillBeSentEvent.Close()
 			defer responseReceivedEvent.Close()
 			defer loadingFailedEvent.Close()
@@ -285,6 +293,30 @@ func (p chromePrinter) Print(destination string) error {
 			}
 		}
 
+		requestPausedListener := func() error {
+			const localUrlPrefix = "file:"
+			resourceDirectoryUrlPrefix := fmt.Sprintf("file://%s/", p.opts.ResourceDirectory)
+
+			for {
+				event, err := requestPaused.Recv()
+				if err != nil {
+					if strings.Contains(err.Error(), "rpcc: the stream is closing") {
+						return nil
+					}
+					return err
+				}
+
+				allowed := strings.HasPrefix(event.Request.URL, resourceDirectoryUrlPrefix) ||
+					!strings.HasPrefix(event.Request.URL, localUrlPrefix)
+
+				if allowed {
+					targetClient.Fetch.ContinueRequest(ctx, fetch.NewContinueRequestArgs(event.RequestID))
+				} else {
+					targetClient.Fetch.FailRequest(ctx, fetch.NewFailRequestArgs(event.RequestID, network.ErrorReasonFailed))
+				}
+			}
+		}
+
 		requestURLs := make(map[network.RequestID]string)
 		requestURLsMutex := sync.RWMutex{}
 
@@ -366,6 +398,7 @@ func (p chromePrinter) Print(destination string) error {
 			crashListener,
 			exceptionListener,
 			consoleListener,
+			requestPausedListener,
 			requestWillBeSentListener,
 			responseReceivedListener,
 			loadingFailedListener,
@@ -531,6 +564,7 @@ func (p chromePrinter) enableEvents(ctx context.Context, client *cdp.Client) err
 	if err := runBatch(
 		ctx,
 		func() error { return client.DOM.Enable(ctx) },
+		func() error { return client.Fetch.Enable(ctx, fetch.NewEnableArgs()) },
 		func() error { return client.Network.Enable(ctx, network.NewEnableArgs()) },
 		func() error { return client.Page.Enable(ctx) },
 		func() error {
@@ -574,6 +608,10 @@ func (p chromePrinter) listenEvents(ctx context.Context, client *cdp.Client) err
 	resolver := func() error {
 		// make sure Page events are enabled.
 		if err := client.Page.Enable(ctx); err != nil {
+			return err
+		}
+		// make sure Fetch events are enabled.
+		if err := client.Fetch.Enable(ctx, nil); err != nil {
 			return err
 		}
 		// make sure Network events are enabled.

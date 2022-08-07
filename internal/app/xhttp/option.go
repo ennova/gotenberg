@@ -88,6 +88,7 @@ func chromePrinterOptions(r resource.Resource, config conf.Config) (printer.Chro
 			Scale:              scale,
 			MaxConnections:     maxConnections,
 			WaitForConnection:  waitForConnection,
+			ResourceDirectory:  r.DirPath(),
 		}, nil
 	}
 	opts, err := resolver()
