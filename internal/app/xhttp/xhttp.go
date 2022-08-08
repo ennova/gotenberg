@@ -28,14 +28,14 @@ func New(config conf.Config) *echo.Echo {
 
 		srv.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 			return func(c echo.Context) error {
-				err := handler(next)(c);
+				err := handler(next)(c)
 
 				if _, ok := err.(base64.CorruptInputError); ok {
 					c.Request().Header.Del(echo.HeaderAuthorization)
-					err = handler(next)(c);
+					err = handler(next)(c)
 				}
 
-				return err;
+				return err
 			}
 		})
 	}
