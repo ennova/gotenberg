@@ -12,16 +12,13 @@ RUN echo "deb http://httpredir.debian.org/debian/ buster main contrib non-free" 
     apt-get install -y curl wget gnupg ttf-mscorefonts-installer procps
 
 # |--------------------------------------------------------------------------
-# | Chrome
+# | Chromium
 # |--------------------------------------------------------------------------
 # |
-# | Installs Chrome.
+# | Installs Chromium.
 # |
 
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - &&\
-    echo "deb http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list &&\
-    apt-get update &&\
-    apt-get -y --allow-unauthenticated install google-chrome-stable
+RUN apt-get -y install chromium
 
 # |--------------------------------------------------------------------------
 # | Fonts
