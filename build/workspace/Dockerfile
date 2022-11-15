@@ -1,9 +1,10 @@
 ARG DOCKER_REGISTRY
+ARG DOCKER_PLATFORM_SUFFIX
 ARG GOLANG_VERSION
 
 FROM golang:${GOLANG_VERSION}-bullseye as golang
 
-FROM ${DOCKER_REGISTRY}/gotenberg:base
+FROM ${DOCKER_REGISTRY}/gotenberg:base${DOCKER_PLATFORM_SUFFIX}
 
 # |--------------------------------------------------------------------------
 # | Common libraries

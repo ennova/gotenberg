@@ -3,6 +3,8 @@ VERSION=snapshot
 DOCKER_USER=
 DOCKER_PASSWORD=
 DOCKER_REGISTRY=thecodingmachine
+DOCKER_PLATFORM=linux
+DOCKER_PLATFORM_SUFFIX:=$(shell echo "$(DOCKER_PLATFORM)" | cut -s -d / -f 2- | tr -d / | sed 's/^/-/')
 GOTENBERG_USER_GID=1001
 GOTENBERG_USER_UID=1001
 GOLANGCI_LINT_VERSION=1.27.0
@@ -23,12 +25,12 @@ GOOGLE_CHROME_IGNORE_CERTIFICATE_ERRORS=0
 
 # build the base Docker image.
 base:
-	docker build --build-arg DOCKER_REGISTRY=$(DOCKER_REGISTRY) --build-arg GOTENBERG_USER_GID=$(GOTENBERG_USER_GID) --build-arg GOTENBERG_USER_UID=$(GOTENBERG_USER_UID) -t $(DOCKER_REGISTRY)/gotenberg:base -f build/base/Dockerfile .
+	docker build --platform=$(DOCKER_PLATFORM) --build-arg DOCKER_PLATFORM_SUFFIX=$(DOCKER_PLATFORM_SUFFIX) --build-arg DOCKER_REGISTRY=$(DOCKER_REGISTRY) --build-arg GOTENBERG_USER_GID=$(GOTENBERG_USER_GID) --build-arg GOTENBERG_USER_UID=$(GOTENBERG_USER_UID) -t $(DOCKER_REGISTRY)/gotenberg:base$(DOCKER_PLATFORM_SUFFIX) -f build/base/Dockerfile .
 
 # build the workspace Docker image.
 workspace:
 	make base
-	docker build --build-arg DOCKER_REGISTRY=$(DOCKER_REGISTRY) --build-arg GOLANG_VERSION=$(GOLANG_VERSION) -t $(DOCKER_REGISTRY)/gotenberg:workspace -f build/workspace/Dockerfile .
+	docker build --platform=$(DOCKER_PLATFORM) --build-arg DOCKER_PLATFORM_SUFFIX=$(DOCKER_PLATFORM_SUFFIX) --build-arg DOCKER_REGISTRY=$(DOCKER_REGISTRY) --build-arg GOLANG_VERSION=$(GOLANG_VERSION) -t $(DOCKER_REGISTRY)/gotenberg:workspace$(DOCKER_PLATFORM_SUFFIX) -f build/workspace/Dockerfile .
 
 # gofmt and goimports all go files.
 fmt:
@@ -54,7 +56,7 @@ doc:
 # build Gotenberg Docker image.
 image:
 	make workspace
-	docker buildx build --build-arg DOCKER_REGISTRY=$(DOCKER_REGISTRY) --build-arg VERSION=$(VERSION) --build-arg TINI_VERSION=$(TINI_VERSION) -t $(DOCKER_REGISTRY)/gotenberg:$(VERSION) -f build/package/Dockerfile .
+	docker buildx build --platform=$(DOCKER_PLATFORM) --build-arg DOCKER_PLATFORM_SUFFIX=$(DOCKER_PLATFORM_SUFFIX) --build-arg DOCKER_REGISTRY=$(DOCKER_REGISTRY) --build-arg VERSION=$(VERSION) --build-arg TINI_VERSION=$(TINI_VERSION) -t $(DOCKER_REGISTRY)/gotenberg:$(VERSION)$(DOCKER_PLATFORM_SUFFIX) -f build/package/Dockerfile .
 
 # start the API using previously built Docker image.
 gotenberg:

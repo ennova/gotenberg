@@ -6,8 +6,9 @@
 # |
 
 ARG DOCKER_REGISTRY
+ARG DOCKER_PLATFORM_SUFFIX
 
-FROM ${DOCKER_REGISTRY}/gotenberg:workspace AS workspace
+FROM ${DOCKER_REGISTRY}/gotenberg:workspace${DOCKER_PLATFORM_SUFFIX} AS workspace
 
 ARG VERSION
 
@@ -31,7 +32,7 @@ COPY cmd ./cmd
 # Build our binary.
 RUN go build -o gotenberg -ldflags "-X main.version=${VERSION}" cmd/gotenberg/main.go
 
-FROM ${DOCKER_REGISTRY}/gotenberg:base
+FROM ${DOCKER_REGISTRY}/gotenberg:base${DOCKER_PLATFORM_SUFFIX}
 
 LABEL authors="Julien Neuhart <j.neuhart@thecodingmachine.com>"
 
