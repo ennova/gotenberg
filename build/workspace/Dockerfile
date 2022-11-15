@@ -1,8 +1,9 @@
+ARG DOCKER_REGISTRY
 ARG GOLANG_VERSION
 
 FROM golang:${GOLANG_VERSION}-bullseye as golang
 
-FROM thecodingmachine/gotenberg:base
+FROM ${DOCKER_REGISTRY}/gotenberg:base
 
 # |--------------------------------------------------------------------------
 # | Common libraries

@@ -23,12 +23,12 @@ GOOGLE_CHROME_IGNORE_CERTIFICATE_ERRORS=0
 
 # build the base Docker image.
 base:
-	docker build --build-arg GOTENBERG_USER_GID=$(GOTENBERG_USER_GID) --build-arg GOTENBERG_USER_UID=$(GOTENBERG_USER_UID) -t $(DOCKER_REGISTRY)/gotenberg:base -f build/base/Dockerfile .
+	docker build --build-arg DOCKER_REGISTRY=$(DOCKER_REGISTRY) --build-arg GOTENBERG_USER_GID=$(GOTENBERG_USER_GID) --build-arg GOTENBERG_USER_UID=$(GOTENBERG_USER_UID) -t $(DOCKER_REGISTRY)/gotenberg:base -f build/base/Dockerfile .
 
 # build the workspace Docker image.
 workspace:
 	make base
-	docker build --build-arg GOLANG_VERSION=$(GOLANG_VERSION) -t $(DOCKER_REGISTRY)/gotenberg:workspace -f build/workspace/Dockerfile . 
+	docker build --build-arg DOCKER_REGISTRY=$(DOCKER_REGISTRY) --build-arg GOLANG_VERSION=$(GOLANG_VERSION) -t $(DOCKER_REGISTRY)/gotenberg:workspace -f build/workspace/Dockerfile .
 
 # gofmt and goimports all go files.
 fmt:
@@ -54,7 +54,7 @@ doc:
 # build Gotenberg Docker image.
 image:
 	make workspace
-	docker build --build-arg VERSION=$(VERSION) --build-arg TINI_VERSION=$(TINI_VERSION) -t $(DOCKER_REGISTRY)/gotenberg:$(VERSION) -f build/package/Dockerfile .
+	docker buildx build --build-arg DOCKER_REGISTRY=$(DOCKER_REGISTRY) --build-arg VERSION=$(VERSION) --build-arg TINI_VERSION=$(TINI_VERSION) -t $(DOCKER_REGISTRY)/gotenberg:$(VERSION) -f build/package/Dockerfile .
 
 # start the API using previously built Docker image.
 gotenberg:

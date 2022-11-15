@@ -5,7 +5,9 @@
 # | Builds Gotenberg binary.
 # |
 
-FROM thecodingmachine/gotenberg:workspace AS workspace
+ARG DOCKER_REGISTRY
+
+FROM ${DOCKER_REGISTRY}/gotenberg:workspace AS workspace
 
 ARG VERSION
 
@@ -29,7 +31,7 @@ COPY cmd ./cmd
 # Build our binary.
 RUN go build -o gotenberg -ldflags "-X main.version=${VERSION}" cmd/gotenberg/main.go
 
-FROM thecodingmachine/gotenberg:base
+FROM ${DOCKER_REGISTRY}/gotenberg:base
 
 LABEL authors="Julien Neuhart <j.neuhart@thecodingmachine.com>"
 
