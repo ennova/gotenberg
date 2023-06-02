@@ -439,6 +439,15 @@ func sendToErrorWebhook(ctx context.Context, xerr error) {
 		}
 		req.Header.Set("X-Trace-Id", logger.GetTraceId())
 		req.Header.Set(echo.HeaderContentType, "application/json")
+		customHTTPHeaders := resource.WebhookURLCustomHTTPHeaders(r)
+		if len(customHTTPHeaders) > 0 {
+			for key, value := range customHTTPHeaders {
+				req.Header.Set(key, value)
+				logger.DebugOpf(op, "set '%s' to custom HTTP header '%s'", value, key)
+			}
+		} else {
+			logger.DebugOp(op, "skipping custom HTTP headers as none have been provided...")
+		}
 		httpClient := retryablehttp.NewClient()
 		httpClient.Logger = retryablehttp.LeveledLogger(xlog.NewLeveledLogger(logger, op))
 		httpClient.HTTPClient.Timeout = xtime.Duration(webhookURLTimeout)
