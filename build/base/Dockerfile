@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 # |--------------------------------------------------------------------------
 # | Common libraries
@@ -7,7 +7,7 @@ FROM debian:bullseye-slim
 # | Libraries used in the build process of this image.
 # |
 
-RUN echo "deb http://httpredir.debian.org/debian/ buster main contrib non-free" >> /etc/apt/sources.list &&\
+RUN echo "deb http://deb.debian.org/debian bookworm contrib" >> /etc/apt/sources.list &&\
     apt-get update &&\
     apt-get install -y curl wget gnupg ttf-mscorefonts-installer procps
 
