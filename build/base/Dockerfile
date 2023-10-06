@@ -9,7 +9,7 @@ FROM debian:bookworm-slim
 
 RUN echo "deb http://deb.debian.org/debian bookworm contrib" >> /etc/apt/sources.list &&\
     apt-get update &&\
-    apt-get install -y curl wget gnupg ttf-mscorefonts-installer procps
+    apt-get install -y --no-install-recommends curl wget gnupg ttf-mscorefonts-installer procps
 
 # |--------------------------------------------------------------------------
 # | Chromium
@@ -18,7 +18,7 @@ RUN echo "deb http://deb.debian.org/debian bookworm contrib" >> /etc/apt/sources
 # | Installs Chromium.
 # |
 
-RUN apt-get -y install chromium
+RUN apt-get -y install --no-install-recommends chromium
 
 # |--------------------------------------------------------------------------
 # | Fonts
@@ -31,7 +31,7 @@ RUN apt-get -y install chromium
 # Credits: 
 # https://github.com/arachnys/athenapdf/blob/master/cli/Dockerfile
 # https://help.accusoft.com/PrizmDoc/v12.1/HTML/Installing_Asian_Fonts_on_Ubuntu_and_Debian.html
-RUN apt-get install -y \
+RUN apt-get install -y --no-install-recommends \
     culmus \
     fonts-beng \
     fonts-hosny-amiri \
