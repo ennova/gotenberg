@@ -33,7 +33,9 @@ docker push e7build/gotenberg:$NEW_TAG-amd64
 docker push e7build/gotenberg:$NEW_TAG-arm64v8
 
 for NEW_TAG_VARIANT in $NEW_TAG ${SEMVER[0]}.${SEMVER[1]}.${SEMVER[2]} ${SEMVER[0]}.${SEMVER[1]} ${SEMVER[0]} latest; do
-  docker manifest rm e7build/gotenberg:$NEW_TAG_VARIANT 2> /dev/null || true
-  docker manifest create e7build/gotenberg:$NEW_TAG_VARIANT e7build/gotenberg:$NEW_TAG-{amd64,arm64v8}
-  docker manifest push e7build/gotenberg:$NEW_TAG_VARIANT
+  docker buildx imagetools create \
+    --tag "e7build/gotenberg:$NEW_TAG_VARIANT" \
+    "e7build/gotenberg:$NEW_TAG-amd64" \
+    "e7build/gotenberg:$NEW_TAG-arm64v8"
+  echo "Published e7build/gotenberg:$NEW_TAG_VARIANT"
 done
