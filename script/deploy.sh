@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-if [ "$#" -ne 1 ]; then
-  echo "Usage: $0 <qa|prod>" >&2
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+  echo "Usage: $0 <qa|prod> [tag]" >&2
   exit 2
 fi
 
@@ -15,7 +15,11 @@ case "$1" in
 esac
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TAG="$(git -C "$REPO_ROOT" describe --abbrev=0 --tags --match '*-e7-*' HEAD)"
+if [ "$#" -eq 2 ]; then
+  TAG="$2"
+else
+  TAG="$(git -C "$REPO_ROOT" describe --abbrev=0 --tags --match '*-e7-*' HEAD)"
+fi
 
 if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+-e7-[0-9a-f]+$ ]]; then
   echo "Unexpected release tag: $TAG" >&2
