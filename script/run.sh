@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-go build -o gotenberg cmd/gotenberg/main.go
+go build -o /dev/null cmd/gotenberg/main.go
 make image DOCKER_REGISTRY=e7build
 
 clear
