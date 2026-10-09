@@ -25,11 +25,12 @@ GOOGLE_CHROME_IGNORE_CERTIFICATE_ERRORS=0
 
 # build the base Docker image.
 base:
-	docker build --platform=$(DOCKER_PLATFORM) --build-arg DOCKER_PLATFORM_SUFFIX=$(DOCKER_PLATFORM_SUFFIX) --build-arg DOCKER_REGISTRY=$(DOCKER_REGISTRY) --build-arg GOTENBERG_USER_GID=$(GOTENBERG_USER_GID) --build-arg GOTENBERG_USER_UID=$(GOTENBERG_USER_UID) -t $(DOCKER_REGISTRY)/gotenberg:base$(DOCKER_PLATFORM_SUFFIX) -f build/base/Dockerfile .
+	docker build --pull --platform=$(DOCKER_PLATFORM) --build-arg DOCKER_PLATFORM_SUFFIX=$(DOCKER_PLATFORM_SUFFIX) --build-arg DOCKER_REGISTRY=$(DOCKER_REGISTRY) --build-arg GOTENBERG_USER_GID=$(GOTENBERG_USER_GID) --build-arg GOTENBERG_USER_UID=$(GOTENBERG_USER_UID) -t $(DOCKER_REGISTRY)/gotenberg:base$(DOCKER_PLATFORM_SUFFIX) -f build/base/Dockerfile .
 
 # build the workspace Docker image.
 workspace:
 	make base
+	docker pull --platform=$(DOCKER_PLATFORM) "$$(grep '^FROM ' build/workspace/Dockerfile | grep -v DOCKER_REGISTRY | cut -d ' ' -f 2 | sed 's/[$$]{GOLANG_VERSION}/$(GOLANG_VERSION)/g')"
 	docker build --platform=$(DOCKER_PLATFORM) --build-arg DOCKER_PLATFORM_SUFFIX=$(DOCKER_PLATFORM_SUFFIX) --build-arg DOCKER_REGISTRY=$(DOCKER_REGISTRY) --build-arg GOLANG_VERSION=$(GOLANG_VERSION) -t $(DOCKER_REGISTRY)/gotenberg:workspace$(DOCKER_PLATFORM_SUFFIX) -f build/workspace/Dockerfile .
 
 # gofmt and goimports all go files.

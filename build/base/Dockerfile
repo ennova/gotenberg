@@ -9,6 +9,7 @@ FROM debian:bookworm-slim
 
 RUN echo "deb http://deb.debian.org/debian bookworm contrib" >> /etc/apt/sources.list &&\
     apt-get update &&\
+    apt-get upgrade -y --with-new-pkgs --no-install-recommends &&\
     apt-get install -y --no-install-recommends curl wget gnupg ttf-mscorefonts-installer procps
 
 # |--------------------------------------------------------------------------
