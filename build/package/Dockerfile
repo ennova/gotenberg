@@ -10,8 +10,6 @@ ARG DOCKER_PLATFORM_SUFFIX
 
 FROM ${DOCKER_REGISTRY}/gotenberg:workspace${DOCKER_PLATFORM_SUFFIX} AS workspace
 
-ARG VERSION
-
 ENV GOOS=linux \
     GOARCH=amd64 \
     CGO_ENABLED=0
@@ -30,6 +28,8 @@ COPY internal ./internal
 COPY cmd ./cmd
 
 # Build our binary.
+ARG VERSION
+
 RUN go build -o gotenberg -ldflags "-X main.version=${VERSION}" cmd/gotenberg/main.go
 
 FROM ${DOCKER_REGISTRY}/gotenberg:base${DOCKER_PLATFORM_SUFFIX}
