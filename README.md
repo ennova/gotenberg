@@ -29,6 +29,17 @@ The API is now available on your host at `http://localhost:3000`.
 Head to the [documentation](https://thecodingmachine.github.io/gotenberg)
 to learn how to interact with it!
 
+## Ennova scripts
+
+Run these commands from the repository root:
+
+| Command | Purpose |
+| --- | --- |
+| `./script/run.sh` | Build and run locally at `http://localhost:3090`. |
+| `./script/publish.sh` | Build AMD64 and ARM64 images and publish release tags, version aliases, and `latest` to Docker Hub (`e7build/gotenberg`). Also push `master` and the Git release tag. |
+| `./script/publish-ci.sh` | Sync up to 10 published Docker Hub tags to CI's AWS ECR registry, preserving all architectures. |
+| `./script/deploy.sh <qa\|prod> [tag]` | Deploy to QA or PROD. Omit the tag to use the latest published release, or provide a release tag explicitly. Run once per environment to deploy to both. |
+
 ## Badges
 
 [![Docker pulls](https://img.shields.io/docker/pulls/thecodingmachine/gotenberg)](https://hub.docker.com/r/thecodingmachine/gotenberg)
