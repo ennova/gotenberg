@@ -24,9 +24,8 @@ make image VERSION="$NEW_TAG" DOCKER_REGISTRY=e7build DOCKER_PLATFORM=linux/amd6
 make image VERSION="$NEW_TAG" DOCKER_REGISTRY=e7build DOCKER_PLATFORM=linux/arm64/v8
 
 if [[ "$NEW_TAG" != "$PREVIOUS_TAG" ]]; then
-   git tag "$NEW_TAG"
+  git tag "$NEW_TAG"
 fi
-
 git push origin master "$NEW_TAG"
 
 docker push e7build/gotenberg:$NEW_TAG-amd64
