@@ -37,7 +37,10 @@ RUN --mount=type=cache,id=gotenberg-go-mod,target=/gotenberg/go/pkg/mod \
 
 FROM ${DOCKER_REGISTRY}/gotenberg:base${DOCKER_PLATFORM_SUFFIX}
 
+ARG VERSION
+
 LABEL authors="Julien Neuhart <j.neuhart@thecodingmachine.com>"
+LABEL org.opencontainers.image.version="${VERSION}"
 
 # |--------------------------------------------------------------------------
 # | Tini
