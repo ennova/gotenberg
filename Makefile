@@ -6,8 +6,10 @@ DOCKER_REGISTRY=thecodingmachine
 DOCKER_PLATFORM=linux
 DOCKER_PLATFORM_SUFFIX:=$(shell echo "$(DOCKER_PLATFORM)" | cut -s -d / -f 2- | tr -d / | sed 's/^/-/')
 BASE_IMAGE=$(DOCKER_REGISTRY)/gotenberg:base$(DOCKER_PLATFORM_SUFFIX)
+STABLE_IMAGE=$(DOCKER_REGISTRY)/gotenberg:stable$(DOCKER_PLATFORM_SUFFIX)
 WORKSPACE_IMAGE=$(DOCKER_REGISTRY)/gotenberg:workspace$(DOCKER_PLATFORM_SUFFIX)
 PREPARE=1
+APT_CACHE_BUST=$(shell date -u +%Y-%m-%d)
 GOTENBERG_USER_GID=1001
 GOTENBERG_USER_UID=1001
 GOLANGCI_LINT_VERSION=1.27.0
@@ -28,7 +30,12 @@ GOOGLE_CHROME_IGNORE_CERTIFICATE_ERRORS=0
 
 # build the base Docker image.
 base:
-	docker build --pull --platform=$(DOCKER_PLATFORM) --build-arg DOCKER_PLATFORM_SUFFIX=$(DOCKER_PLATFORM_SUFFIX) --build-arg DOCKER_REGISTRY=$(DOCKER_REGISTRY) --build-arg GOTENBERG_USER_GID=$(GOTENBERG_USER_GID) --build-arg GOTENBERG_USER_UID=$(GOTENBERG_USER_UID) -t $(BASE_IMAGE) -f build/base/Dockerfile .
+	$(MAKE) stable
+	docker build --target runtime --platform=$(DOCKER_PLATFORM) --build-arg APT_CACHE_BUST=$(APT_CACHE_BUST) --build-arg GOTENBERG_USER_GID=$(GOTENBERG_USER_GID) --build-arg GOTENBERG_USER_UID=$(GOTENBERG_USER_UID) -t $(BASE_IMAGE) -f build/base/Dockerfile .
+
+# build the shared Docker image without the runtime package refresh.
+stable:
+	docker build --pull --target stable --platform=$(DOCKER_PLATFORM) --build-arg GOTENBERG_USER_GID=$(GOTENBERG_USER_GID) --build-arg GOTENBERG_USER_UID=$(GOTENBERG_USER_UID) -t $(STABLE_IMAGE) -f build/base/Dockerfile .
 
 # build the workspace Docker image.
 workspace:
@@ -36,7 +43,7 @@ ifeq ($(PREPARE),1)
 	$(MAKE) base
 endif
 	docker pull --platform=$(DOCKER_PLATFORM) "$$(grep '^FROM golang:' build/workspace/Dockerfile | cut -d ' ' -f 2 | sed 's/[$$]{GOLANG_VERSION}/$(GOLANG_VERSION)/g')"
-	docker build --platform=$(DOCKER_PLATFORM) --build-arg BASE_IMAGE=$(BASE_IMAGE) --build-arg GOLANG_VERSION=$(GOLANG_VERSION) -t $(WORKSPACE_IMAGE) -f build/workspace/Dockerfile .
+	docker build --platform=$(DOCKER_PLATFORM) --build-arg STABLE_IMAGE=$(STABLE_IMAGE) --build-arg GOLANG_VERSION=$(GOLANG_VERSION) -t $(WORKSPACE_IMAGE) -f build/workspace/Dockerfile .
 
 # gofmt and goimports all go files.
 fmt:
@@ -62,7 +69,8 @@ doc:
 # build Gotenberg Docker image.
 image:
 ifeq ($(PREPARE),1)
-	$(MAKE) workspace
+	$(MAKE) base
+	$(MAKE) workspace PREPARE=0
 endif
 	docker buildx build --load --platform=$(DOCKER_PLATFORM) --build-arg BASE_IMAGE=$(BASE_IMAGE) --build-arg WORKSPACE_IMAGE=$(WORKSPACE_IMAGE) --build-arg VERSION=$(VERSION) --build-arg TINI_VERSION=$(TINI_VERSION) -t $(DOCKER_REGISTRY)/gotenberg:$(VERSION)$(DOCKER_PLATFORM_SUFFIX) -f build/package/Dockerfile .
 

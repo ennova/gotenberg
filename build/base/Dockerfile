@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim
+FROM debian:bookworm-slim AS stable
 
 # |--------------------------------------------------------------------------
 # | Common libraries
@@ -72,3 +72,12 @@ RUN groupadd --gid ${GOTENBERG_USER_GID} gotenberg \
   && useradd --uid ${GOTENBERG_USER_UID} --gid gotenberg --shell /bin/bash --home /gotenberg --no-create-home gotenberg \
   && mkdir /gotenberg \
   && chown gotenberg: /gotenberg
+
+FROM stable AS runtime
+
+ARG APT_CACHE_BUST
+
+RUN echo "APT cache bust: ${APT_CACHE_BUST}" &&\
+    apt-get update &&\
+    apt-get upgrade -y --with-new-pkgs --no-install-recommends &&\
+    rm -rf /var/lib/apt/lists/*

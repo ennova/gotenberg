@@ -1,27 +1,47 @@
 #!/bin/bash
 set -euo pipefail
 
-PREVIOUS_TAG="$(git describe --abbrev=0 --tags HEAD)"
+PREVIOUS_TAG="$(git describe --abbrev=0 --tags --match '*-e7-*' HEAD)"
 
-if ! echo "$PREVIOUS_TAG" | egrep -q "^[0-9.]+-e7-[0-9a-f]+$"; then
+if [[ ! "$PREVIOUS_TAG" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-e7-[0-9a-f]+$ ]]; then
   echo "Unexpected previous tag: $PREVIOUS_TAG" >&2
   exit 1
 fi
 
-PREVIOUS_TAG_VERSION="$(echo "$PREVIOUS_TAG" | egrep -o "^[0-9.]+")"
-
-NEW_TAG="$PREVIOUS_TAG_VERSION-e7-$(git rev-parse --short HEAD)"
+PREVIOUS_TAG_VERSION="${BASH_REMATCH[1]}"
+SOURCE_SHA="$(git rev-parse --short HEAD)"
+NEW_TAG="$PREVIOUS_TAG_VERSION-e7-$SOURCE_SHA"
+APT_CACHE_BUST="${APT_CACHE_BUST:-$(date -u +%Y-%m-%d)}"
 
 IFS=. read -r -a SEMVER <<< "$PREVIOUS_TAG_VERSION"
-VERSION_LENGTH=${#SEMVER[@]}
 
-if [ $VERSION_LENGTH -ne 3 ]; then
-  echo "$VERSION is not semver."
-  exit 1
-fi
+PLATFORMS=(linux/amd64 linux/arm64/v8)
+SUFFIXES=(amd64 arm64v8)
+BASE_IMAGES=()
+WORKSPACE_IMAGES=()
+for i in "${!PLATFORMS[@]}"; do
+  PLATFORM="${PLATFORMS[$i]}"
+  SUFFIX="${SUFFIXES[$i]}"
+  make base APT_CACHE_BUST="$APT_CACHE_BUST" DOCKER_REGISTRY=e7build DOCKER_PLATFORM="$PLATFORM"
+  BASE_TAG="e7build/gotenberg:base-$SUFFIX"
+  BASE_ID="$(docker image inspect --format '{{.Id}}' "$BASE_TAG")"
+  BASE_IMAGES[i]="e7build/gotenberg:base-$SUFFIX-${BASE_ID#sha256:}"
+  docker tag "$BASE_ID" "${BASE_IMAGES[$i]}"
 
-make image VERSION="$NEW_TAG" DOCKER_REGISTRY=e7build DOCKER_PLATFORM=linux/amd64
-make image VERSION="$NEW_TAG" DOCKER_REGISTRY=e7build DOCKER_PLATFORM=linux/arm64/v8
+  STABLE_TAG="e7build/gotenberg:stable-$SUFFIX"
+  STABLE_ID="$(docker image inspect --format '{{.Id}}' "$STABLE_TAG")"
+  STABLE_IMAGE="e7build/gotenberg:stable-$SUFFIX-${STABLE_ID#sha256:}"
+  docker tag "$STABLE_ID" "$STABLE_IMAGE"
+  make workspace PREPARE=0 STABLE_IMAGE="$STABLE_IMAGE" DOCKER_REGISTRY=e7build DOCKER_PLATFORM="$PLATFORM"
+  WORKSPACE_TAG="e7build/gotenberg:workspace-$SUFFIX"
+  WORKSPACE_ID="$(docker image inspect --format '{{.Id}}' "$WORKSPACE_TAG")"
+  WORKSPACE_IMAGES[i]="e7build/gotenberg:workspace-$SUFFIX-${WORKSPACE_ID#sha256:}"
+  docker tag "$WORKSPACE_ID" "${WORKSPACE_IMAGES[$i]}"
+done
+
+for i in "${!PLATFORMS[@]}"; do
+  make image PREPARE=0 BASE_IMAGE="${BASE_IMAGES[$i]}" WORKSPACE_IMAGE="${WORKSPACE_IMAGES[$i]}" VERSION="$NEW_TAG" DOCKER_REGISTRY=e7build DOCKER_PLATFORM="${PLATFORMS[$i]}"
+done
 
 if [[ "$NEW_TAG" != "$PREVIOUS_TAG" ]]; then
   git tag "$NEW_TAG"

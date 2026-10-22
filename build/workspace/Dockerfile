@@ -1,11 +1,11 @@
 ARG DOCKER_REGISTRY
 ARG DOCKER_PLATFORM_SUFFIX
 ARG GOLANG_VERSION
-ARG BASE_IMAGE=${DOCKER_REGISTRY}/gotenberg:base${DOCKER_PLATFORM_SUFFIX}
+ARG STABLE_IMAGE=${DOCKER_REGISTRY}/gotenberg:stable${DOCKER_PLATFORM_SUFFIX}
 
 FROM golang:${GOLANG_VERSION}-bookworm as golang
 
-FROM ${BASE_IMAGE}
+FROM ${STABLE_IMAGE}
 
 # |--------------------------------------------------------------------------
 # | Common libraries
