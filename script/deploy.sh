@@ -14,16 +14,34 @@ case "$1" in
     ;;
 esac
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+LATEST_PLATFORM_ID=
 if [ "$#" -eq 2 ]; then
   TAG="$2"
 else
-  TAG="$(git -C "$REPO_ROOT" describe --abbrev=0 --tags --match '*-e7-*' HEAD)"
+  docker pull --platform linux/amd64 e7build/gotenberg:latest
+  LATEST_IMAGE_ID="$(docker image inspect --format '{{.Id}}' e7build/gotenberg:latest)"
+  LATEST_PLATFORM_ID="$(docker image inspect --platform linux/amd64 --format '{{.Id}}' "$LATEST_IMAGE_ID")"
+  TAG="$(docker image inspect --platform linux/amd64 --format '{{index .Config.Labels "org.opencontainers.image.version"}}' "$LATEST_IMAGE_ID")"
+  if [[ -z "$TAG" || "$TAG" == '<no value>' ]]; then
+    echo "Latest image has no release version label; supply an explicit release tag" >&2
+    exit 1
+  fi
 fi
 
 if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+-e7-[0-9a-f]+$ ]]; then
   echo "Unexpected release tag: $TAG" >&2
   exit 1
+fi
+
+SOURCE_IMAGE="e7build/gotenberg:$TAG-amd64"
+docker pull --platform linux/amd64 "$SOURCE_IMAGE"
+SOURCE_IMAGE_ID="$(docker image inspect --format '{{.Id}}' "$SOURCE_IMAGE")"
+if [[ -n "$LATEST_PLATFORM_ID" ]]; then
+  SOURCE_PLATFORM_ID="$(docker image inspect --platform linux/amd64 --format '{{.Id}}' "$SOURCE_IMAGE_ID")"
+  if [[ "$SOURCE_PLATFORM_ID" != "$LATEST_PLATFORM_ID" ]]; then
+    echo "Release image $SOURCE_IMAGE does not match the resolved latest image" >&2
+    exit 1
+  fi
 fi
 
 SUBSCRIPTION="SYNCHRO Perform"
@@ -41,13 +59,11 @@ if [ -z "$REGISTRY_SERVER" ]; then
   exit 1
 fi
 
-SOURCE_IMAGE="e7build/gotenberg:$TAG-amd64"
 TARGET_IMAGE="$REGISTRY_SERVER/gotenberg:$TAG"
 
 echo "Deploying $SOURCE_IMAGE to $WEBAPP as $TARGET_IMAGE"
-docker pull --platform linux/amd64 "$SOURCE_IMAGE"
 az acr login --subscription "$SUBSCRIPTION" --name "$REGISTRY" --output none
-docker tag "$SOURCE_IMAGE" "$TARGET_IMAGE"
+docker tag "$SOURCE_IMAGE_ID" "$TARGET_IMAGE"
 docker push "$TARGET_IMAGE"
 
 az webapp config container set \
