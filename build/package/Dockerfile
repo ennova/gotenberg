@@ -7,8 +7,10 @@
 
 ARG DOCKER_REGISTRY
 ARG DOCKER_PLATFORM_SUFFIX
+ARG BASE_IMAGE=${DOCKER_REGISTRY}/gotenberg:base${DOCKER_PLATFORM_SUFFIX}
+ARG WORKSPACE_IMAGE=${DOCKER_REGISTRY}/gotenberg:workspace${DOCKER_PLATFORM_SUFFIX}
 
-FROM ${DOCKER_REGISTRY}/gotenberg:workspace${DOCKER_PLATFORM_SUFFIX} AS workspace
+FROM ${WORKSPACE_IMAGE} AS workspace
 
 ENV GOOS=linux \
     GOARCH=amd64 \
@@ -35,7 +37,7 @@ RUN --mount=type=cache,id=gotenberg-go-mod,target=/gotenberg/go/pkg/mod \
     --mount=type=cache,id=gotenberg-go-build,target=/root/.cache/go-build \
     go build -o gotenberg -ldflags "-X main.version=${VERSION}" cmd/gotenberg/main.go
 
-FROM ${DOCKER_REGISTRY}/gotenberg:base${DOCKER_PLATFORM_SUFFIX}
+FROM ${BASE_IMAGE}
 
 ARG VERSION
 
