@@ -20,7 +20,8 @@ WORKDIR /gotenberg/package
 # Install module dependencies.
 COPY go.mod go.sum ./
 
-RUN go mod download &&\
+RUN --mount=type=cache,id=gotenberg-go-mod,target=/gotenberg/go/pkg/mod \
+    go mod download &&\
     go mod verify
 
 # Copy our source code.
@@ -30,7 +31,9 @@ COPY cmd ./cmd
 # Build our binary.
 ARG VERSION
 
-RUN go build -o gotenberg -ldflags "-X main.version=${VERSION}" cmd/gotenberg/main.go
+RUN --mount=type=cache,id=gotenberg-go-mod,target=/gotenberg/go/pkg/mod \
+    --mount=type=cache,id=gotenberg-go-build,target=/root/.cache/go-build \
+    go build -o gotenberg -ldflags "-X main.version=${VERSION}" cmd/gotenberg/main.go
 
 FROM ${DOCKER_REGISTRY}/gotenberg:base${DOCKER_PLATFORM_SUFFIX}
 
