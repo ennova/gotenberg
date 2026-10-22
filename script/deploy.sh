@@ -28,7 +28,7 @@ else
   fi
 fi
 
-if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+-e7-[0-9a-f]+$ ]]; then
+if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+-e7-[0-9a-f]+(-[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)?$ ]]; then
   echo "Unexpected release tag: $TAG" >&2
   exit 1
 fi

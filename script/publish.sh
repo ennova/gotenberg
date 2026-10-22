@@ -3,14 +3,13 @@ set -euo pipefail
 
 PREVIOUS_TAG="$(git describe --abbrev=0 --tags --match '*-e7-*' HEAD)"
 
-if [[ ! "$PREVIOUS_TAG" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-e7-[0-9a-f]+$ ]]; then
+if [[ ! "$PREVIOUS_TAG" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-e7-[0-9a-f]+(-[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)?$ ]]; then
   echo "Unexpected previous tag: $PREVIOUS_TAG" >&2
   exit 1
 fi
 
 PREVIOUS_TAG_VERSION="${BASH_REMATCH[1]}"
 SOURCE_SHA="$(git rev-parse --short HEAD)"
-NEW_TAG="$PREVIOUS_TAG_VERSION-e7-$SOURCE_SHA"
 APT_CACHE_BUST="${APT_CACHE_BUST:-$(date -u +%Y-%m-%d)}"
 
 IFS=. read -r -a SEMVER <<< "$PREVIOUS_TAG_VERSION"
@@ -19,6 +18,18 @@ PLATFORMS=(linux/amd64 linux/arm64/v8)
 SUFFIXES=(amd64 arm64v8)
 BASE_IMAGES=()
 WORKSPACE_IMAGES=()
+RELEASE_CHROMIUM_VERSION=
+
+chromium_version() {
+  local output
+  output="$(docker run --rm --platform "$1" --entrypoint chromium "$2" --version)"
+  if [[ ! "$output" =~ ^Chromium\ ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)([[:space:]]|$) ]]; then
+    echo "Unexpected Chromium version from $2: $output" >&2
+    return 1
+  fi
+  printf '%s\n' "${BASH_REMATCH[1]}"
+}
+
 for i in "${!PLATFORMS[@]}"; do
   PLATFORM="${PLATFORMS[$i]}"
   SUFFIX="${SUFFIXES[$i]}"
@@ -27,6 +38,13 @@ for i in "${!PLATFORMS[@]}"; do
   BASE_ID="$(docker image inspect --format '{{.Id}}' "$BASE_TAG")"
   BASE_IMAGES[i]="e7build/gotenberg:base-$SUFFIX-${BASE_ID#sha256:}"
   docker tag "$BASE_ID" "${BASE_IMAGES[$i]}"
+
+  PLATFORM_CHROMIUM_VERSION="$(chromium_version "$PLATFORM" "${BASE_IMAGES[$i]}")"
+  if [[ -n "$RELEASE_CHROMIUM_VERSION" && "$PLATFORM_CHROMIUM_VERSION" != "$RELEASE_CHROMIUM_VERSION" ]]; then
+    echo "Chromium versions differ: $RELEASE_CHROMIUM_VERSION and $PLATFORM_CHROMIUM_VERSION ($PLATFORM)" >&2
+    exit 1
+  fi
+  RELEASE_CHROMIUM_VERSION="$PLATFORM_CHROMIUM_VERSION"
 
   STABLE_TAG="e7build/gotenberg:stable-$SUFFIX"
   STABLE_ID="$(docker image inspect --format '{{.Id}}' "$STABLE_TAG")"
@@ -39,13 +57,22 @@ for i in "${!PLATFORMS[@]}"; do
   docker tag "$WORKSPACE_ID" "${WORKSPACE_IMAGES[$i]}"
 done
 
+NEW_TAG="$PREVIOUS_TAG_VERSION-e7-$SOURCE_SHA-$RELEASE_CHROMIUM_VERSION"
+if git show-ref --verify --quiet "refs/tags/$NEW_TAG"; then
+  echo "Release tag already exists: $NEW_TAG" >&2
+  exit 1
+fi
+
 for i in "${!PLATFORMS[@]}"; do
   make image PREPARE=0 BASE_IMAGE="${BASE_IMAGES[$i]}" WORKSPACE_IMAGE="${WORKSPACE_IMAGES[$i]}" VERSION="$NEW_TAG" DOCKER_REGISTRY=e7build DOCKER_PLATFORM="${PLATFORMS[$i]}"
+  FINAL_VERSION="$(chromium_version "${PLATFORMS[$i]}" "e7build/gotenberg:$NEW_TAG-${SUFFIXES[$i]}")"
+  if [[ "$FINAL_VERSION" != "$RELEASE_CHROMIUM_VERSION" ]]; then
+    echo "Final image Chromium version differs: expected $RELEASE_CHROMIUM_VERSION, got $FINAL_VERSION (${PLATFORMS[$i]})" >&2
+    exit 1
+  fi
 done
 
-if [[ "$NEW_TAG" != "$PREVIOUS_TAG" ]]; then
-  git tag "$NEW_TAG"
-fi
+git tag "$NEW_TAG"
 git push origin master "$NEW_TAG"
 
 docker push "e7build/gotenberg:$NEW_TAG-amd64"
