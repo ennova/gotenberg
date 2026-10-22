@@ -12,7 +12,7 @@ PREVIOUS_TAG_VERSION="$(echo "$PREVIOUS_TAG" | egrep -o "^[0-9.]+")"
 
 NEW_TAG="$PREVIOUS_TAG_VERSION-e7-$(git rev-parse --short HEAD)"
 
-SEMVER=( ${PREVIOUS_TAG_VERSION//./ } )
+IFS=. read -r -a SEMVER <<< "$PREVIOUS_TAG_VERSION"
 VERSION_LENGTH=${#SEMVER[@]}
 
 if [ $VERSION_LENGTH -ne 3 ]; then
@@ -28,10 +28,10 @@ if [[ "$NEW_TAG" != "$PREVIOUS_TAG" ]]; then
 fi
 git push origin master "$NEW_TAG"
 
-docker push e7build/gotenberg:$NEW_TAG-amd64
-docker push e7build/gotenberg:$NEW_TAG-arm64v8
+docker push "e7build/gotenberg:$NEW_TAG-amd64"
+docker push "e7build/gotenberg:$NEW_TAG-arm64v8"
 
-for NEW_TAG_VARIANT in $NEW_TAG ${SEMVER[0]}.${SEMVER[1]}.${SEMVER[2]} ${SEMVER[0]}.${SEMVER[1]} ${SEMVER[0]} latest; do
+for NEW_TAG_VARIANT in "$NEW_TAG" "${SEMVER[0]}.${SEMVER[1]}.${SEMVER[2]}" "${SEMVER[0]}.${SEMVER[1]}" "${SEMVER[0]}" latest; do
   docker buildx imagetools create \
     --tag "e7build/gotenberg:$NEW_TAG_VARIANT" \
     "e7build/gotenberg:$NEW_TAG-amd64" \
