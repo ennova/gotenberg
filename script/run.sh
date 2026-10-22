@@ -9,6 +9,7 @@ clear
 
 docker run \
   --rm -it \
+  --name gotenberg \
   -p 3090:3000 \
   -m 256M \
   -e LOG_LEVEL=DEBUG \
