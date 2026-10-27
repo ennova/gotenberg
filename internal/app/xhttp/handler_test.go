@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -619,8 +620,12 @@ func TestWebhook(t *testing.T) {
 	req.Header.Set(echo.HeaderContentType, contentType)
 	req.Header.Set(customHeaderKey, customHeaderValue)
 	test.AssertStatusCode(t, http.StatusOK, srv, req)
-	err := <-status
-	assert.NoError(t, err)
+	select {
+	case err := <-status:
+		assert.NoError(t, err)
+	case <-time.After(10 * time.Second):
+		t.Fatal("timed out waiting for webhook callback")
+	}
 }
 
 func TestResultFilename(t *testing.T) {
