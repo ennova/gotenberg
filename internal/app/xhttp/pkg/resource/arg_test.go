@@ -14,9 +14,12 @@ func TestArgKeys(t *testing.T) {
 		ResultFilenameArgKey,
 		WaitTimeoutArgKey,
 		WebhookURLArgKey,
+		WebhookURLTimeoutArgKey,
 		WebhookURLMethodArgKey,
+		WebhookErrorURLArgKey,
 		RemoteURLArgKey,
 		WaitDelayArgKey,
+		WaitJSRenderStatusArgKey,
 		PaperWidthArgKey,
 		PaperHeightArgKey,
 		MarginTopArgKey,
@@ -27,6 +30,7 @@ func TestArgKeys(t *testing.T) {
 		PageRangesArgKey,
 		GoogleChromeRpccBufferSizeArgKey,
 		ScaleArgKey,
+		WaitForConnectionArgKey,
 	}
 	assert.Equal(t, expected, ArgKeys())
 }
