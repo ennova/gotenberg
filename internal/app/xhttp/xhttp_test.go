@@ -8,6 +8,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/thecodingmachine/gotenberg/internal/pkg/conf"
 	"github.com/thecodingmachine/gotenberg/test"
 )
@@ -19,6 +20,21 @@ func TestNonExistingEndpoint(t *testing.T) {
 	// "/" endpoint should return 404.
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	test.AssertStatusCode(t, http.StatusNotFound, srv, req)
+}
+
+func TestRemovedEndpoints(t *testing.T) {
+	for _, disableUnoconv := range []string{"0", "1"} {
+		t.Run("DISABLE_UNOCONV="+disableUnoconv, func(t *testing.T) {
+			t.Setenv(conf.DisableUnoconvEnvVar, disableUnoconv)
+			config, err := conf.FromEnv()
+			require.NoError(t, err)
+			srv := New(config)
+			for _, endpoint := range []string{mergeEndpoint(config), officeEndpoint(config)} {
+				req := httptest.NewRequest(http.MethodPost, endpoint, nil)
+				test.AssertStatusCode(t, http.StatusNotFound, srv, req)
+			}
+		})
+	}
 }
 
 func TestHttpAuthentication(t *testing.T) {
@@ -47,11 +63,11 @@ func TestDisableChromeEndpoints(t *testing.T) {
 	// Ping endpoint should return 200.
 	req := httptest.NewRequest(http.MethodGet, pingEndpoint(config), nil)
 	test.AssertStatusCode(t, http.StatusOK, srv, req)
-	// Merge endpoint should return 200.
+	// Merge endpoint should return 404.
 	body, contentType := test.MergeMultipartForm(t, nil)
 	req = httptest.NewRequest(http.MethodPost, mergeEndpoint(config), body)
 	req.Header.Set(echo.HeaderContentType, contentType)
-	test.AssertStatusCode(t, http.StatusOK, srv, req)
+	test.AssertStatusCode(t, http.StatusNotFound, srv, req)
 	// HTML endpoint should return 404.
 	body, contentType = test.HTMLMultipartForm(t, nil)
 	req = httptest.NewRequest(http.MethodPost, htmlEndpoint(config), body)
@@ -67,11 +83,11 @@ func TestDisableChromeEndpoints(t *testing.T) {
 	req = httptest.NewRequest(http.MethodPost, markdownEndpoint(config), body)
 	req.Header.Set(echo.HeaderContentType, contentType)
 	test.AssertStatusCode(t, http.StatusNotFound, srv, req)
-	// Office endpoint should return 200.
+	// Office endpoint should return 404.
 	body, contentType = test.OfficeMultipartForm(t, nil)
 	req = httptest.NewRequest(http.MethodPost, officeEndpoint(config), body)
 	req.Header.Set(echo.HeaderContentType, contentType)
-	test.AssertStatusCode(t, http.StatusOK, srv, req)
+	test.AssertStatusCode(t, http.StatusNotFound, srv, req)
 	// finally...
 	os.Setenv(conf.DisableGoogleChromeEnvVar, "0")
 }
@@ -84,11 +100,11 @@ func TestDisableUnoconvEndpoints(t *testing.T) {
 	// Ping endpoint should return 200.
 	req := httptest.NewRequest(http.MethodGet, pingEndpoint(config), nil)
 	test.AssertStatusCode(t, http.StatusOK, srv, req)
-	// Merge endpoint should return 200.
+	// Merge endpoint should return 404.
 	body, contentType := test.MergeMultipartForm(t, nil)
 	req = httptest.NewRequest(http.MethodPost, mergeEndpoint(config), body)
 	req.Header.Set(echo.HeaderContentType, contentType)
-	test.AssertStatusCode(t, http.StatusOK, srv, req)
+	test.AssertStatusCode(t, http.StatusNotFound, srv, req)
 	// HTML endpoint should return 200.
 	body, contentType = test.HTMLMultipartForm(t, nil)
 	req = httptest.NewRequest(http.MethodPost, htmlEndpoint(config), body)
@@ -121,11 +137,11 @@ func TestDisableChromeAndUnoconvEndpoints(t *testing.T) {
 	// Ping endpoint should return 200.
 	req := httptest.NewRequest(http.MethodGet, pingEndpoint(config), nil)
 	test.AssertStatusCode(t, http.StatusOK, srv, req)
-	// Merge endpoint should return 200.
+	// Merge endpoint should return 404.
 	body, contentType := test.MergeMultipartForm(t, nil)
 	req = httptest.NewRequest(http.MethodPost, mergeEndpoint(config), body)
 	req.Header.Set(echo.HeaderContentType, contentType)
-	test.AssertStatusCode(t, http.StatusOK, srv, req)
+	test.AssertStatusCode(t, http.StatusNotFound, srv, req)
 	// HTML endpoint should return 404.
 	body, contentType = test.HTMLMultipartForm(t, nil)
 	req = httptest.NewRequest(http.MethodPost, htmlEndpoint(config), body)
@@ -159,11 +175,11 @@ func TestCustomRootPath(t *testing.T) {
 	// Ping endpoint should return 200.
 	req := httptest.NewRequest(http.MethodGet, pingEndpoint(config), nil)
 	test.AssertStatusCode(t, http.StatusOK, srv, req)
-	// Merge endpoint should return 200.
+	// Merge endpoint should return 404.
 	body, contentType := test.MergeMultipartForm(t, nil)
 	req = httptest.NewRequest(http.MethodPost, mergeEndpoint(config), body)
 	req.Header.Set(echo.HeaderContentType, contentType)
-	test.AssertStatusCode(t, http.StatusOK, srv, req)
+	test.AssertStatusCode(t, http.StatusNotFound, srv, req)
 	// HTML endpoint should return 200.
 	body, contentType = test.HTMLMultipartForm(t, nil)
 	req = httptest.NewRequest(http.MethodPost, htmlEndpoint(config), body)
@@ -179,11 +195,11 @@ func TestCustomRootPath(t *testing.T) {
 	req = httptest.NewRequest(http.MethodPost, markdownEndpoint(config), body)
 	req.Header.Set(echo.HeaderContentType, contentType)
 	test.AssertStatusCode(t, http.StatusOK, srv, req)
-	// Office endpoint should return 200.
+	// Office endpoint should return 404.
 	body, contentType = test.OfficeMultipartForm(t, nil)
 	req = httptest.NewRequest(http.MethodPost, officeEndpoint(config), body)
 	req.Header.Set(echo.HeaderContentType, contentType)
-	test.AssertStatusCode(t, http.StatusOK, srv, req)
+	test.AssertStatusCode(t, http.StatusNotFound, srv, req)
 	// finally...
 	os.Setenv(conf.RootPathEnvVar, "/")
 }

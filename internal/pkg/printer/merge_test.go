@@ -2,6 +2,7 @@ package printer
 
 import (
 	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,6 +13,9 @@ import (
 )
 
 func TestMergePrinter(t *testing.T) {
+	if _, err := exec.LookPath("pdftk"); err != nil {
+		t.Skip("pdftk is not installed; PDF merging is not supported by this image")
+	}
 	var (
 		logger xlog.Logger = test.DebugLogger()
 		config conf.Config = conf.DefaultConfig()

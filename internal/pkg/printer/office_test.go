@@ -2,6 +2,7 @@ package printer
 
 import (
 	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,6 +13,11 @@ import (
 )
 
 func TestOfficePrinter(t *testing.T) {
+	for _, binary := range []string{"unoconv", "pdftk"} {
+		if _, err := exec.LookPath(binary); err != nil {
+			t.Skipf("%s is not installed; Office conversion is not supported by this image", binary)
+		}
+	}
 	var (
 		logger xlog.Logger = test.DebugLogger()
 		config conf.Config = conf.DefaultConfig()
