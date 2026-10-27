@@ -15,7 +15,7 @@ func TestURLPrinter(t *testing.T) {
 	var (
 		logger xlog.Logger = test.DebugLogger()
 		config conf.Config = conf.DefaultConfig()
-		URL                = "https://google.com"
+		URL                = test.PageURL(t)
 		opts   ChromePrinterOptions
 		dest   string
 		p      Printer

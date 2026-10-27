@@ -3,7 +3,6 @@
   <head>
     <meta charset="utf-8">
     <link rel="stylesheet" type="text/css" href="style.css">
-    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
     <title>Gutenberg</title>
   </head>
   <body>
@@ -22,9 +21,7 @@
     <div class="page-break-after">
       {{ toHTML .DirPath "paragraph1.md" }}
 
-      <div class="google-font">
-          {{ toHTML .DirPath "paragraph2.md" }}
-      </div>
+      {{ toHTML .DirPath "paragraph2.md" }}
   
       <div class="local-font">
           {{ toHTML .DirPath "paragraph3.md" }}

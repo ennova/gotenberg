@@ -6,10 +6,6 @@ body {
     text-align: center;
 }
 
-.google-font {
-    font-family: 'Montserrat', sans-serif;
-}
-
 @font-face {
     font-family: 'Local';
     src: url('font.woff') format('woff');
