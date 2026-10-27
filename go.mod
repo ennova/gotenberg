@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
-	github.com/labstack/echo/v4 v4.16.0
+	github.com/labstack/echo/v4 v4.16.2
 	github.com/labstack/gommon v0.5.0
 	github.com/mafredri/cdp v0.28.0
 	github.com/mattn/go-isatty v0.0.22
